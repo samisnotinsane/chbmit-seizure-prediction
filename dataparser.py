@@ -148,7 +148,13 @@ class DataParser:
         if diff < 0:
             return False
         return True
-        
+    
+    def preictal_interval_times(self, filename:str, interval_time:int) -> int:
+        if not self.check_preictal_interval_exists(filename, interval_time):
+            raise ValueError('Preictal interval does not exist! Try again with shorter interval_time.')
+        preictal_end_time = self.seizure_start_time(filename)
+        preictal_start_time = preictal_end_time - interval_time
+        return preictal_start_time, preictal_end_time
 
 if __name__ == '__main__':
     rootdir = '/Volumes/My Passport/AI_Research/data/physionet.org/files/chbmit/1.0.0/'
@@ -166,4 +172,7 @@ if __name__ == '__main__':
     print('15 mins in secs:', parser.mins_in_secs(15))
     print(parser.check_preictal_interval_exists('chb01_03.edf', parser.mins_in_secs(15)))
     print(parser.check_preictal_interval_exists('chb01_21.edf', parser.mins_in_secs(15)))
+    print('chb01_03.edf preictal start time:', parser.preictal_interval_times('chb01_03.edf', parser.mins_in_secs(15))[0])
+    print('chb01_03.edf preictal start time:', parser.preictal_interval_times('chb01_03.edf', parser.mins_in_secs(15))[1])
+
 
