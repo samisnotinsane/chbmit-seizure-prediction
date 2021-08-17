@@ -116,7 +116,8 @@ class DataParser:
         summary = self._patient_summary()
         for info in summary:
             if info['File Name'] == filename:
-                seizure_start_time = info['Seizure Start Time']
+                start_time_str = info['Seizure Start Time'].split(' ')[1]
+                seizure_start_time = int(start_time_str)
         return seizure_start_time
 
     def seizure_end_time(self, filename) -> int:
@@ -127,8 +128,27 @@ class DataParser:
         summary = self._patient_summary()
         for info in summary:
             if info['File Name'] == filename:
-                seizure_end_time = info['Seizure End Time']
+                end_time_str = info['Seizure End Time'].split(' ')[1]
+                seizure_end_time = int(end_time_str)
         return seizure_end_time
+
+    def mins_in_secs(self, mins:int) -> int:
+        return mins*60
+
+    def check_preictal_interval_exists(self, filename:str, interval_time:int) -> bool:
+        """
+            Returns True if an interval of supplied length in seconds exists before the 
+            seizure start time. If the seizure occurs before `interval_time` seconds have passed 
+            then this function returns False.
+        """
+        seizure_start_time = self.seizure_start_time(filename)
+        if seizure_start_time == -1:
+            return False
+        diff = seizure_start_time - interval_time
+        if diff < 0:
+            return False
+        return True
+        
 
 if __name__ == '__main__':
     rootdir = '/Volumes/My Passport/AI_Research/data/physionet.org/files/chbmit/1.0.0/'
@@ -142,4 +162,8 @@ if __name__ == '__main__':
     print('chb01_03.edf seizure start time:', start_time)
     end_time = parser.seizure_end_time('chb01_03.edf')
     print('chb01_03.edf seizure end time:', end_time)
+    print('60 mins in secs:', parser.mins_in_secs(60))
+    print('15 mins in secs:', parser.mins_in_secs(15))
+    print(parser.check_preictal_interval_exists('chb01_03.edf', parser.mins_in_secs(15)))
+    print(parser.check_preictal_interval_exists('chb01_21.edf', parser.mins_in_secs(15)))
 
