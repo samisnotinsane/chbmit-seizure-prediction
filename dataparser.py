@@ -1,9 +1,11 @@
 import os
 import re
+import random
 import pprint
 import mne
 from mne.io.edf.edf import RawEDF
 import numpy as np
+from datetime import datetime
 
 class DataParser:
     def __init__(self, rootdir, patient_id, *args, **kwargs):
@@ -156,6 +158,66 @@ class DataParser:
         preictal_start_time = preictal_end_time - interval_time
         return preictal_start_time, preictal_end_time
 
+    def _time_difference(self, time_start:str, time_end:str) -> float:
+        "Deprecated. Use `file_start_end_times` instead."
+        s1 = time_start
+        s2 = time_end
+        FMT = '%H:%M:%S'
+        tdelta = datetime.strptime(s2, FMT) - datetime.strptime(s1, FMT)
+        return tdelta.total_seconds()
+
+    def file_start_end_times(self, filename:str) -> int:
+        """
+            Returns the start and end times of file in Unix epoch time format.
+            Unix epoch time is defined as the number of seconds passed since 01.01.1900
+        """
+        start_time_str, end_time_str = '', ''
+        summary = self._patient_summary()
+        for info in summary:
+            if info['File Name'] == filename:
+                start_time_str = info['File Start Time']
+                end_time_str = info['File End Time']
+                break
+        start_date_time = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
+        start_epoch_time = start_date_time - datetime.datetime(1900, 1, 1) # Unix epoch
+
+        end_date_time = datetime.datetime.strptime(end_time_str, "%H:%M:%S")
+        end_epoch_time = end_date_time - datetime.datetime(1900, 1, 1)
+        return start_epoch_time, end_epoch_time
+
+    def file_duration(self, filename:str) -> int:
+        start_time, end_time = self.file_start_end_times(filename)
+        return end_time - start_time
+
+    def ex_range(self, lower_bound:int, exclude_lower_bound:int, exclude_upper_bound:int, upper_bound:int) -> int:
+        excluded_range = list(range(lower_bound, exclude_lower_bound)) + list(range(exclude_upper_bound, upper_bound))
+        return excluded_range
+
+    def is_preictal(self, filename) -> bool:
+        res = [x for x in self.seizure_filenames() if (x in filename)]
+        return bool(res)
+
+    def random_interictal_interval(self, filename:str, interval_time:int) -> int:
+        """
+        Return a contiguous interval of interictal times outside of preictal and interictal intervals.
+        """
+        if self.is_preictal(filename):
+            file_start, file_end = self.file_start_end_times(filename)
+            excluded_start = self.preictal_interval_times()[0]
+            excluded_end = self.seizure_end_time
+            file_range = self.ex_range(file_start, excluded_start, excluded_end, file_end)
+            start_idx = random.randrange(len(file_range))
+            # ...
+    
+    # TODO: write a method to randomly choose an interictal file and select an interval 
+    # given by start and end times.
+
+        
+
+
+
+
+
 if __name__ == '__main__':
     rootdir = '/Volumes/My Passport/AI_Research/data/physionet.org/files/chbmit/1.0.0/'
     parser = DataParser(rootdir, 'chb01')
@@ -170,9 +232,8 @@ if __name__ == '__main__':
     print('chb01_03.edf seizure end time:', end_time)
     print('60 mins in secs:', parser.mins_in_secs(60))
     print('15 mins in secs:', parser.mins_in_secs(15))
-    print(parser.check_preictal_interval_exists('chb01_03.edf', parser.mins_in_secs(15)))
-    print(parser.check_preictal_interval_exists('chb01_21.edf', parser.mins_in_secs(15)))
+    print('15 mins interval exists:', parser.check_preictal_interval_exists('chb01_03.edf', parser.mins_in_secs(15)))
+    print('15 mins interval exists:', parser.check_preictal_interval_exists('chb01_21.edf', parser.mins_in_secs(15)))
     print('chb01_03.edf preictal start time:', parser.preictal_interval_times('chb01_03.edf', parser.mins_in_secs(15))[0])
     print('chb01_03.edf preictal start time:', parser.preictal_interval_times('chb01_03.edf', parser.mins_in_secs(15))[1])
-
 
