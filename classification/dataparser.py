@@ -110,6 +110,16 @@ class DataParser:
         raw = mne.io.read_raw_edf(input_fname=filepath, preload=False, verbose='Error')
         return raw
 
+    def data_interval(self, filepath, start, end) -> np.ndarray:
+        raw = self._get_raw(filepath)
+        return raw.crop(tmin=start, tmax=end).get_data(picks='all', units='uV', return_times=False)
+    
+    def data_all(self, filepath) -> np.ndarray:
+        filename = filepath.split('/')[-1]
+        raw = self._get_raw(filepath)
+        data = raw.get_data(picks='all', units='uV', return_times=False)
+        return data
+        
     def seizure_start_time(self, filename) -> int:
         """
         Returns seizure start time in seconds.
@@ -178,16 +188,16 @@ class DataParser:
                 start_time_str = info['File Start Time']
                 end_time_str = info['File End Time']
                 break
-        start_date_time = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
-        start_epoch_time = start_date_time - datetime.datetime(1900, 1, 1) # Unix epoch
+        start_date_time = datetime.strptime(start_time_str, "%H:%M:%S")
+        start_epoch_time = start_date_time - datetime(1900, 1, 1) # Unix epoch
 
-        end_date_time = datetime.datetime.strptime(end_time_str, "%H:%M:%S")
-        end_epoch_time = end_date_time - datetime.datetime(1900, 1, 1)
+        end_date_time = datetime.strptime(end_time_str, "%H:%M:%S")
+        end_epoch_time = end_date_time - datetime(1900, 1, 1)
         return start_epoch_time, end_epoch_time
 
-    def file_duration(self, filename:str) -> int:
+    def file_duration_in_secs(self, filename:str) -> int:
         start_time, end_time = self.file_start_end_times(filename)
-        return end_time - start_time
+        return (end_time - start_time).seconds
 
     def ex_range(self, lower_bound:int, exclude_lower_bound:int, exclude_upper_bound:int, upper_bound:int) -> int:
         excluded_range = list(range(lower_bound, exclude_lower_bound)) + list(range(exclude_upper_bound, upper_bound))
@@ -211,10 +221,6 @@ class DataParser:
     
     # TODO: write a method to randomly choose an interictal file and select an interval 
     # given by start and end times.
-
-        
-
-
 
 
 
