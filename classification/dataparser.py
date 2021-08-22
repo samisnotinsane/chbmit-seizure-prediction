@@ -65,11 +65,76 @@ class DataParser:
 
         return file_metadata
 
+    
+
+    def info_dict(self, content) -> dict:
+        part_info_dict = {}
+        
+        line_nos=len(content)
+        line_no=1
+
+        channels = []
+        file_name = []
+        file_info_dict={}
+
+        for line in content:
+            # if there is Channel in the line...
+            if re.findall('Channel \d+', line):
+                # split the line into channel number and channel reference
+                channel = line.split(': ')
+                # get the channel reference and remove any new lines
+                channel = channel[-1].replace("\n", "")
+                # put into the channel list
+                channels.append(channel)
+
+            # if the line is the file name
+            elif re.findall('File Name', line):
+                # if there is already a file_name
+                if file_name:
+                    # flush the current file info to it
+                    part_info_dict[file_name] = file_info_dict
+            
+                # get the file name
+                file_name = re.findall('\w+\d+_\d+|\w+\d+\w+_\d+', line)[0]
+
+                file_info_dict = {}
+                # put the channel list in the file info dict and remove duplicates
+                file_info_dict['Channels'] = list(set(channels))
+                # reset the rest of the options
+                file_info_dict['Start Time'] = ''
+                file_info_dict['End Time'] = ''
+                file_info_dict['Seizures Window'] = []
+
+            # if the line is about the file start time
+            elif re.findall('File Start Time', line):
+                # get the start time
+                file_info_dict['Start Time'] = re.findall('\d+:\d+:\d+', line)[0]
+
+            # if the line is about the file end time
+            elif re.findall('File End Time', line):
+                # get the start time
+                file_info_dict['End Time'] = re.findall('\d+:\d+:\d+', line)[0]
+
+            elif re.findall('Seizure Start Time|Seizure End Time|Seizure \d+ Start Time|Seizure \d+ End Time', line):
+                file_info_dict['Seizures Window'].append(int(re.findall('\d+', line)[-1]))
+
+            # if last line in the list...
+            if line_no == line_nos:
+                # flush the file info to it
+                part_info_dict[file_name] = file_info_dict
+
+            line_no+=1
+        return part_info_dict
+    
     def _patient_summary(self) -> list:
         regex = re.compile('^chb\d{2}-summary.txt$')
         summary_fname = [x for x in os.listdir(self.root + self.patient_id) if regex.search(x)]
         summary_fpath = self.root + self.patient_id + '/' + summary_fname[0]
-        patient_summary = self._parse_summary(summary_fpath)
+#         patient_summary = self._parse_summary(summary_fpath)
+        content_str = ''
+        with open(summary_fpath) as f:
+            content_str = f.readlines()
+        patient_summary = self.info_dict(content_str)
         return patient_summary
 
     def print_summary(self):
