@@ -3,6 +3,8 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 import mne
+import random
+import string
 
 root = '/Volumes/My Passport/AI_Research/data/physionet.org/files/chbmit/1.0.0' # pointer to where all data is stored
 saveroot = './data' # pointer to where you wish to store train / test data
@@ -48,7 +50,8 @@ with tqdm(total=len(df)) as pbar:
                     data = get_cropped_data(readpath, int(crop_start), int(crop_end))
                     writedir = saveroot + '/' + sset + '/' + case + '/' + cclass
                     Path(writedir).mkdir(parents=True, exist_ok=True)
-                    writepath = writedir + '/' + filename.split('.')[0] + '_' + cclass.lower() + savefmt
+                    identifier = ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
+                    writepath = writedir + '/' + filename.split('.')[0] + '_' + identifier + '_' + cclass.lower() + savefmt
                     np.save(writepath, data)
                 if cclass == 'Interictal':
                     readpath = root + '/' + case + '/' + filename
