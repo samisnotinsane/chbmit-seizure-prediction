@@ -5,7 +5,9 @@ from sklearn.linear_model import LogisticRegression
 from joblib import dump
 
 # save path parameters
-saveroot = './models/chb01/AR/'
+case = 'chb01'
+feature_extract_name = 'AR'
+saveroot = './models/' + case + '/' + feature_extract_name + '/'
 
 # data path parameters
 root = './data/Train/chb01'
@@ -76,7 +78,7 @@ print('[Done]')
 # save model
 print('Saving model: 1/3')
 print('Serialising...', end='')
-savepath = saveroot + 'chb01_AR_' + 'SVM_RBF' + '.joblib'
+savepath = saveroot + case + '_' + feature_extract_name + '_' + 'SVM_RBF' + '.joblib'
 dump(svc_linear, savepath) 
 print('[Done]')
 print('Saved: ', savepath)
@@ -95,7 +97,7 @@ print('[Done]')
 # save model
 print('Saving model: 2/3')
 print('Serialising...', end='')
-savepath = saveroot + 'chb01_AR_' +  'SVM_Linear' + '.joblib'
+savepath = saveroot + case + '_' + feature_extract_name + '_' +  'SVM_Linear' + '.joblib'
 dump(svc_rbf, savepath)
 print('[Done]')
 print('Saved: ', savepath)
@@ -113,7 +115,7 @@ print('[Done]')
 # save model
 print('Saving model: 3/3')
 print('Serialising...', end='')
-savepath = saveroot  + 'chb01_AR_' + 'Logistic_Regression' + '.joblib'
+savepath = saveroot  + case + '_' + feature_extract_name + '_' + 'Logistic_Regression' + '.joblib'
 dump(clf, savepath)
 print('[Done]')
 print('Saved: ', savepath)

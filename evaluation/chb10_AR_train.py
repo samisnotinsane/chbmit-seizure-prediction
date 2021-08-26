@@ -5,17 +5,17 @@ from sklearn.linear_model import LogisticRegression
 from joblib import dump
 
 # save path parameters
-case = 'chb06'
+case = 'chb10'
 feature_extract_name = 'AR'
 saveroot = './models/' + case + '/' + feature_extract_name + '/'
 
 # data path parameters
-root = './data/Train/chb06'
+root = './data/Train/' + case
 cclass_a = 'Interictal'
 cclass_b = 'Preictal'
 
-interictal_files = ['chb06_02_interictal.npy', 'chb06_03_interictal.npy', 'chb06_05_interictal.npy']
-preictal_files = ['chb06_01_8C_preictal.npy', 'chb06_01_GC_preictal.npy', 'chb06_01_QO_preictal.npy']
+interictal_files = ['chb10_01_interictal.npy', 'chb10_02_interictal.npy', 'chb10_03_interictal.npy']
+preictal_files = ['chb10_12_preictal.npy', 'chb10_20_preictal.npy', 'chb10_27_preictal.npy']
 
 # ARMA parameters
 seed = 42

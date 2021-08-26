@@ -1,39 +1,27 @@
 import numpy as np
-from ARMA import ARMA
+from PIB import PIB
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from joblib import dump
 
 # save path parameters
-case = 'chb06'
-feature_extract_name = 'AR'
+case = 'chb10'
+feature_extract_name = 'PIB'
 saveroot = './models/' + case + '/' + feature_extract_name + '/'
 
 # data path parameters
-root = './data/Train/chb06'
+root = './data/Train/' + case
 cclass_a = 'Interictal'
 cclass_b = 'Preictal'
 
-interictal_files = ['chb06_02_interictal.npy', 'chb06_03_interictal.npy', 'chb06_05_interictal.npy']
-preictal_files = ['chb06_01_8C_preictal.npy', 'chb06_01_GC_preictal.npy', 'chb06_01_QO_preictal.npy']
+interictal_files = ['chb10_01_interictal.npy', 'chb10_02_interictal.npy', 'chb10_03_interictal.npy']
+preictal_files = ['chb10_12_preictal.npy', 'chb10_20_preictal.npy', 'chb10_27_preictal.npy']
 
-# ARMA parameters
-seed = 42
-fs = 256                 # sampling frequency (Hz)
-N = 512                  # fs = N*fp (N must be a natural number)
-fp = fs/N                # prediction frequency
-n_i = 2                  # AR model order
-t_s = 1/fs               # Input signal time period
-n_c = 23                 # Number of EEG electrodes (channels)
-m = 30                   # MA parameter
-print('AR Parameters:')
-print(f'Input channels: {n_c}')
-print(f'Model: AR({n_i})')
-print(f'MA lookback: {m}')
-print(f'Window size: {N}')
-print(f'Sampling frequency: {fs} Hz')
-print(f'Prediction frequency: {fp} Hz')
-ar = ARMA(window_width=N, order=n_i, memory=m, seed=seed)
+# PIB parameters
+bands = [(0.1, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 30, 'Beta'), (30, 70, 'Low Gamma'), (70, 127.9, 'High Gamma')]
+band_names = ['Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma']
+pib = PIB(fs=256, sliding_window=35, bands=bands, band_names=band_names, fft_window='hann', fft_window_duration=20)
+print('Neural Rhythms:', bands)
 
 # generate AR features
 interictal_feature_list = []
@@ -42,13 +30,13 @@ for i in range(3):
     # interictal
     filepath = root + '/' + cclass_a + '/' + interictal_files[i]
     data = np.load(filepath)
-    _, _, features = ar.spin(sig=data, fs=fs)
-    interictal_feature_list.append(features[31:])
+    features = pib.spin(sig=data)
+    interictal_feature_list.append(features)
     # preictal
     filepath = root + '/' + cclass_b + '/' + preictal_files[i]
     data = np.load(filepath)
-    _, _, features = ar.spin(sig=data, fs=fs)
-    preictal_feature_list.append(features[31:])
+    features = pib.spin(sig=data)
+    preictal_feature_list.append(features)
 del filepath, data, features
 
 interictal_input = np.vstack(interictal_feature_list)
@@ -97,7 +85,7 @@ print('[Done]')
 # save model
 print('Saving model: 2/3')
 print('Serialising...', end='')
-savepath = saveroot + case + '_' + feature_extract_name + '_' + 'SVM_Linear' + '.joblib'
+savepath = saveroot + case + '_' + feature_extract_name + '_' +  'SVM_Linear' + '.joblib'
 dump(svc_rbf, savepath)
 print('[Done]')
 print('Saved: ', savepath)
