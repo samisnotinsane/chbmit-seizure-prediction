@@ -4,11 +4,13 @@ import os
 import click
 from tqdm import tqdm
 import numpy as np
-from joblib import load
+from joblib import load, dump
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+import pandas as pd
 
 @click.group()
 def cli():
@@ -79,32 +81,45 @@ def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model=None, wait_msg='Analysing...'):
             # classify features (a_h_k_m)
             if model != None:
                 p = model.predict(a_k.reshape(1, -1))              # TODO: should predict based on features a_h_k_m
-
-            # MA of prediction signal
-            buf_MA = np.append(buf_MA, p)
-            p_MA = np.mean(buf_MA)
-            if len(buf_MA) == mp:
-                buf_MA = np.delete(buf_MA, 0)
-            
+                preds.append(p)                                    # Add to prediction history
+                
+                buf_MA = np.append(buf_MA, p)                      # MA of prediction signal
+                p_MA = np.mean(buf_MA)
+                if len(buf_MA) == mp:
+                    buf_MA = np.delete(buf_MA, 0)
+                p_MAs.append(p_MA)                                 # Add to MA prediction history
             k_list.append(_k)                                  # Add to prediction time history
             a_h_k_list.append(a_h)                             # Add to AR response history
             a_h_k_m_list.append(a_h_k_m)
             a_k_list.append(a_k)                               # Add to ARMA response history
-            preds.append(p)                                    # Add to prediction history
-            p_MAs.append(p_MA)                                 # Add to MA prediction history
         # END decimation condition
     # END sliding window loop
     return k_list, a_h_k_m_list, preds, p_MAs
 
-def ARMA(sig, N, n_i, m, mp, model):
-    # ARMA(X, fs, window, order, feature_mem, predict_mem)
+def ARMA(sig, fs=256, model=None):
+    # initialise ARMA parameters
+    # fs: sampling frequency in Hz
+    window = 512       # window width
+    order = 2          # Second order model AR(2)
+    feature_mem = 30   # MA smoothing for AR features
+    predict_mem = 5    # MA smoothing for prediction signal
+    print(f'ARMA{order, feature_mem}')
+    print(f'Window size: {window}')
+    print(f'Sampling frequency: {fs} Hz')
+    print(f'Prediction frequency: {fs/window} Hz')
+    print(f'Prediction smoothing: {predict_mem}')
+
     n_c = sig.shape[0] # channel count in EEG
     n = sig.shape[1] #  sample count in EEG
-    _ks, a_h_k, p_k, p_MA_k = ARMA_core(sig, N, n_c, n, n_i, m, mp, model)
+    _ks, a_h_k, p_k, p_MA_k = ARMA_core(sig, window, n_c, n, order, feature_mem, predict_mem, model)
     times = np.hstack(_ks)
     response = np.vstack(a_h_k)
-    prediction = np.hstack(p_k)
-    prediction_MA = np.hstack(p_MA_k)
+    if len(p_k) > 0:
+        prediction = np.hstack(p_k)
+        prediction_MA = np.hstack(p_MA_k)
+    else:
+        prediction = np.zeros_like(times)
+        prediction_MA = np.zeros_like(times)
     return times, response, prediction, prediction_MA
 
 def write_response_plot(times, response, preictal_start_time, savename, saveto, saveformat) -> None:
@@ -113,8 +128,9 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.figure(figsize=(12,6))
     sns.lineplot(x=times, y=response[:,0], label='$a_1$')
     ax = sns.lineplot(x=times, y=response[:,1], label='$a_2$')
-    ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
-    ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
+    if preictal_start_time != -1:
+        ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
+        ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
 
     # plt.xticks(np.arange(0,3.76,0.25))
     # plt.xlim([0,3.75])
@@ -124,7 +140,7 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
-    click.secho(f'Response plot saved to: {savepath}')
+    click.secho(f'Response plot saved to: {savepath}', fg='green')
 
 def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat) -> None:
     savepath = saveto + '/' + savename + saveformat
@@ -144,7 +160,19 @@ def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time,
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
-    click.secho(f'Prediction plot saved to: {savepath}')
+    click.secho(f'Prediction plot saved to: {savepath}', fg='green')
+
+def write_ARMA_jointplot(X, y, savename, saveto, saveformat) -> None:
+    savepath = saveto + '/' + savename + saveformat
+    df = pd.DataFrame(X, columns=['Feature 1', 'Feature 2'])
+    df['Period'] = y
+    mapping = {-1: "Interictal", 1: "Preictal"} # map numeric target to string label
+    df.replace({"Period": mapping}, inplace=True)
+    palette = sns.color_palette('Set2', n_colors=2)
+    sns.jointplot(data=df, x='Feature 1', y='Feature 2', hue='Period', kind='kde', palette=palette, alpha=0.6)
+    plt.tight_layout()
+    plt.savefig(savepath)
+    click.secho(f'ARMA jointplot saved to: {savepath}', fg='green')
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -191,22 +219,10 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
 
     if method == 'ARMA':
         # initialise ARMA parameters
-        fs = 256           # sampling frequency in Hz
-        window = 512       # window width
-        order = 2          # Second order model AR(2)
-        feature_mem = 30   # MA smoothing for AR features
-        predict_mem = 5    # MA smoothing for prediction signal
-        
-        print(f'Input length: {X.shape[1]}')
-        print(f'Input channels: {X.shape[0]}')
-        print(f'ARMA{order, feature_mem}')
-        print(f'Window size: {window}')
-        print(f'Sampling frequency: {fs} Hz')
-        print(f'Prediction frequency: {fs/window} Hz')
-        print(f'Prediction smoothing: {predict_mem}')
-
         # online prediction
-        times, response, prediction, MA_prediction = ARMA(X, window, order, feature_mem, predict_mem, model)
+        fs = 256
+        window = 512
+        times, response, prediction, MA_prediction = ARMA(X, fs, model)
 
         print('times:', times.shape)
         print('prediction:', prediction.shape)
@@ -225,8 +241,71 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
         write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat)
 
 @cli.command()
-def teach():
-    pass
+@click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
+@click.option('--method', required=True, help='Feature extraction method. Choose either: \'ARMA\'  or \'Spectral\'')
+@click.option('--learning_algorithm', required=True, help='Machine learning algorithm for training. Choose either: \'Linear SVM\', \'RBF SVM\', \'Logistic Regression\'')
+@click.option('--data', required=True, help='Root directory of train test data.')
+@click.option('--learnersaveto', required=True, help='Path to directory where trained model will be saved.')
+def teach(patient, method, learning_algorithm, data, learnersaveto):
+    Path(learnersaveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
+    sset = 'Train' # use training set for model training
+    # load data
+    click.echo(f'Dataset: {sset}')
+    class_a_name = 'Interictal'
+    class_b_name = 'Preictal'
+    class_a_files = class_files(patient, sset, class_a_name)
+    class_b_files = class_files(patient, sset, class_b_name)
+    class_a_data = load_data(class_a_files)
+    class_b_data = load_data(class_b_files)
+    click.echo(f'Loaded {len(class_a_files)} {class_a_name} arrays')
+    click.echo(f'Loaded {len(class_a_files)} {class_b_name} arrays')
+    
+    print('class_a_data len:', len(class_a_data))
+    print('class_a_data[0].shape:', class_a_data[0].shape)
+    class_a_data_hstacked = np.hstack(class_a_data)
+    class_b_data_hstacked = np.hstack(class_b_data)
+
+    # generate features
+    if method == 'ARMA':
+        click.secho(f'Generating features for class: {class_a_name}', fg='blue')
+        print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
+        print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
+        _, class_a_response, _, _ = ARMA(class_a_data_hstacked)
+
+        click.secho(f'Generating features for class: {class_b_name}', fg='blue')
+        print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
+        print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
+        times, class_b_response, _, _ = ARMA(class_b_data_hstacked)
+
+        # AR response plots
+        saveto = './figures/chb01/AR'
+        class_a_savename = 'train_class_a_response'
+        class_b_savename = 'train_class_b_response'
+        saveformat = '.pdf'
+        preictal_start_time = -1
+        fs = 256
+        window = 512
+        times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
+        write_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, saveformat)
+        write_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, saveformat)
+
+        # target labels
+        class_a_targets = -1 * np.ones(class_a_response.shape[0])
+        class_b_targets = np.ones(class_b_response.shape[0])
+        
+        # merge input classes
+        X = np.vstack((class_a_response, class_b_response))
+        print(f'Merged input classes: {X.shape}')
+        # merge target classes
+        y = np.hstack((class_a_targets, class_b_targets))
+        print(f'Merged target classes: {y.shape}')
+
+        # visualise ARMA feature distribution
+        savename = 'train_jointplot'
+        write_ARMA_jointplot(X, y, savename, saveto, saveformat)
+
+
+
 
 if __name__ == '__main__':
     cli()
