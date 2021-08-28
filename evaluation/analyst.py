@@ -45,7 +45,7 @@ def merge_data(array_a, array_b) -> np.ndarray:
     hstacked_b = np.hstack(array_b)
     return np.hstack((hstacked_a, hstacked_b))
 
-def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model, wait_msg):
+def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model=None, wait_msg='Analysing...'):
     k_list = []                                                # Sequential buffer for time index in prediction point _k
     a_h_k_list = []                                            # Sequential buffer for AR signal samples
     a_h_k_m_list = []
@@ -76,8 +76,9 @@ def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model, wait_msg):
             a_k = np.mean(a_k, axis=0)                         # Mean over channels
             a_h_k_m = np.mean(a_h, axis=0)
 
-            # classify a_k (feature)
-            p = model.predict(a_k.reshape(1, -1))
+            # classify features (a_h_k_m)
+            if model != None:
+                p = model.predict(a_k.reshape(1, -1))              # TODO: should predict based on features a_h_k_m
 
             # MA of prediction signal
             buf_MA = np.append(buf_MA, p)
@@ -96,11 +97,10 @@ def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model, wait_msg):
     return k_list, a_h_k_m_list, preds, p_MAs
 
 def ARMA(sig, N, n_i, m, mp, model):
-    wait_msg = 'Analysing... '
     # ARMA(X, fs, window, order, feature_mem, predict_mem)
     n_c = sig.shape[0] # channel count in EEG
     n = sig.shape[1] #  sample count in EEG
-    _ks, a_h_k, p_k, p_MA_k = ARMA_core(sig, N, n_c, n, n_i, m, mp, model, wait_msg)
+    _ks, a_h_k, p_k, p_MA_k = ARMA_core(sig, N, n_c, n, n_i, m, mp, model)
     times = np.hstack(_ks)
     response = np.vstack(a_h_k)
     prediction = np.hstack(p_k)
@@ -126,8 +126,25 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.savefig(savepath)
     click.secho(f'Response plot saved to: {savepath}')
 
-def write_prediction_plot(times, prediction, MA_prediction, saveto, saveformat) -> None:
-    pass
+def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat) -> None:
+    savepath = saveto + '/' + savename + saveformat
+    sns.set_palette(sns.color_palette('Set2'))
+    plt.figure(figsize=(12,6))
+    ax = sns.lineplot(x=times, y=prediction, label='ARMA(2) Linear SVM')
+    sns.lineplot(x=times, y=MA_prediction, label='MA')
+    ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
+    ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
+    ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
+
+    # plt.xticks(np.arange(0,3.76,0.25))
+    # plt.xlim([0,3.75])
+    plt.ylim([-1.2,2])
+    plt.xlabel('Time, $h$')
+    plt.ylabel('A.U.')
+    plt.legend(loc=3)
+    plt.tight_layout()
+    plt.savefig(savepath)
+    click.secho(f'Prediction plot saved to: {savepath}')
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -192,20 +209,24 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
         times, response, prediction, MA_prediction = ARMA(X, window, order, feature_mem, predict_mem, model)
 
         print('times:', times.shape)
-        print('response:', response.shape)
+        print('prediction:', prediction.shape)
+        print('MA_prediction:', MA_prediction.shape)
 
         
         class_a_data_hstacked = np.hstack(class_a_data)
         times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
-
-        
         preictal_start_time = np.rint(np.max( (np.arange(0, class_a_data_hstacked.shape[1]) / fs) )) / 3600
         print('preictal_start_time:', preictal_start_time)
 
         # plots
         savename = 'ARMA_response'
         write_response_plot(times_in_hour, response, preictal_start_time, savename, saveto, saveformat)
-        # write_prediction_plot(times, prediction, MA_prediction, saveto, saveformat)
+        savename = 'ARMA_Pred_Linear_SVM'
+        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat)
+
+@cli.command()
+def teach():
+    pass
 
 if __name__ == '__main__':
     cli()
