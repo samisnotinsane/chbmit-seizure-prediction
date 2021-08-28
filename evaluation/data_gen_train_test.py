@@ -10,6 +10,9 @@ root = '/Volumes/My Passport/AI_Research/data/physionet.org/files/chbmit/1.0.0' 
 saveroot = './data' # pointer to where you wish to store train / test data
 savefmt = '.npy' # save files in numpy's native format for arrays
 
+print('Reading database:', root)
+print('Saving core train/test data:', saveroot)
+
 def get_cropped_data(filepath, start, end) -> np.ndarray:
     data = mne.io.read_raw_edf(input_fname=filepath, preload=False, verbose='Error') \
                  .crop(tmin=start, tmax=end) \
