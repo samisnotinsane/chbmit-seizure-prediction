@@ -140,7 +140,7 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
-    click.secho(f'Response plot saved to: {savepath}', fg='green')
+    click.secho(f'Response plot saved to: {savepath}')
 
 def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat) -> None:
     savepath = saveto + '/' + savename + saveformat
@@ -160,9 +160,10 @@ def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time,
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
-    click.secho(f'Prediction plot saved to: {savepath}', fg='green')
+    click.secho(f'Prediction plot saved to: {savepath}')
 
 def write_ARMA_jointplot(X, y, savename, saveto, saveformat) -> None:
+    print('Generating plot...', end='')
     savepath = saveto + '/' + savename + saveformat
     df = pd.DataFrame(X, columns=['Feature 1', 'Feature 2'])
     df['Period'] = y
@@ -171,8 +172,27 @@ def write_ARMA_jointplot(X, y, savename, saveto, saveformat) -> None:
     palette = sns.color_palette('Set2', n_colors=2)
     sns.jointplot(data=df, x='Feature 1', y='Feature 2', hue='Period', kind='kde', palette=palette, alpha=0.6)
     plt.tight_layout()
+    click.secho('[Done]', fg='green')
     plt.savefig(savepath)
-    click.secho(f'ARMA jointplot saved to: {savepath}', fg='green')
+    click.secho(f'ARMA jointplot saved to: {savepath}')
+
+def learn_with_and_remember(X, y, model_name, savename, saveto):
+    if model_name == 'Linear SVM':
+            # click.secho('Training Linear Kernel SVM', fg='blue')
+            model = SVC(kernel='linear', class_weight='balanced')
+    if model_name == 'RBF SVM':
+        # click.secho('Training Radial Basis Function Kernel SVM', fg='blue')
+        model = SVC(kernel='rbf', class_weight='balanced')
+    if model_name == 'Logistic Regression':
+        # click.secho('Training Logistic Regression', fg='blue')
+        model = LogisticRegression(random_state=42)
+    model.fit(X, y)
+    saveformat = '.joblib'
+    savepath = saveto + '/' + savename + saveformat
+    print('Serialising model...', end='')
+    dump(model, savepath)
+    click.secho('[Done]', fg='green')
+    click.secho(f'Model saved to: {savepath}')
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -304,8 +324,12 @@ def teach(patient, method, learning_algorithm, data, learnersaveto):
         savename = 'train_jointplot'
         write_ARMA_jointplot(X, y, savename, saveto, saveformat)
 
+        # train and save model
+        model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
+        savename = f'chb01_ARMA_{model_name}_v2'
+        learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
 
-
+    click.secho(f'Completed teaching {learning_algorithm} about patient {patient} using {method}.', fg='green')
 
 if __name__ == '__main__':
     cli()
