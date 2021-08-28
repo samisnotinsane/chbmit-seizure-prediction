@@ -95,7 +95,7 @@ def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model, wait_msg):
     # END sliding window loop
     return k_list, a_h_k_m_list, preds, p_MAs
 
-def ARMA(sig, fs, N, n_i, m, mp, model):
+def ARMA(sig, N, n_i, m, mp, model):
     wait_msg = 'Analysing... '
     # ARMA(X, fs, window, order, feature_mem, predict_mem)
     n_c = sig.shape[0] # channel count in EEG
@@ -119,7 +119,7 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     # plt.xticks(np.arange(0,3.76,0.25))
     # plt.xlim([0,3.75])
     plt.ylim([-1.2,2])
-    plt.xlabel('Time, $s$')
+    plt.xlabel('Time, $h$')
     plt.ylabel('A.U.')
     plt.legend(loc=3)
     plt.tight_layout()
@@ -189,20 +189,22 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
         print(f'Prediction smoothing: {predict_mem}')
 
         # online prediction
-        times, response, prediction, MA_prediction = ARMA(X, fs, window, order, feature_mem, predict_mem, model)
+        times, response, prediction, MA_prediction = ARMA(X, window, order, feature_mem, predict_mem, model)
 
         print('times:', times.shape)
         print('response:', response.shape)
 
         
         class_a_data_hstacked = np.hstack(class_a_data)
-        preictal_start_time = np.rint(np.max(np.arange(0, class_a_data_hstacked.shape[1]) / fs))
+        times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
+
         
+        preictal_start_time = np.rint(np.max( (np.arange(0, class_a_data_hstacked.shape[1]) / fs) )) / 3600
         print('preictal_start_time:', preictal_start_time)
 
         # plots
         savename = 'ARMA_response'
-        write_response_plot(times, response, preictal_start_time, savename, saveto, saveformat)
+        write_response_plot(times_in_hour, response, preictal_start_time, savename, saveto, saveformat)
         # write_prediction_plot(times, prediction, MA_prediction, saveto, saveformat)
 
 if __name__ == '__main__':
