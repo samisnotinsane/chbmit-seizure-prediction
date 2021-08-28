@@ -22,10 +22,14 @@ def class_files(patient, sset, class_name) -> list:
     class_b = 'Preictal'
     if class_name == class_a:
         class_a_dir = root + '/' + class_a
-        return [class_a_dir + '/' + x for x in os.listdir(class_a_dir)]
+        file_names = [class_a_dir + '/' + x for x in os.listdir(class_a_dir) if not x.startswith('.')]
+        print(f'Reading {len(file_names)} {class_name} files from: {class_a_dir}')
+        return file_names
     if class_name == class_b:
         class_b_dir = root + '/' + class_b
-        return [class_b_dir + '/' + x for x in os.listdir(class_b_dir)]
+        file_names = [class_b_dir + '/' + x for x in os.listdir(class_b_dir) if not x.startswith('.')]
+        print(f'Reading {len(file_names)} {class_name} files from: {class_b_dir}')
+        return file_names
     return []
 
 def load_data(files) -> list:
@@ -126,6 +130,9 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
+
+    click.secho(f'times: {times.shape}, response: {response.shape}', fg='yellow')
+
     sns.lineplot(x=times, y=response[:,0], label='$a_1$')
     ax = sns.lineplot(x=times, y=response[:,1], label='$a_2$')
     if preictal_start_time != -1:
@@ -268,6 +275,7 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
 @click.option('--learnersaveto', required=True, help='Path to directory where trained model will be saved.')
 @click.option('--plot_figures', is_flag=True, help='Root directory of train test data.')
 def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures):
+    click.secho(f'Begin teaching {learning_algorithm} about patient {patient} using {method}.', fg='blue')
     Path(learnersaveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     sset = 'Train' # use training set for model training
     # load data
