@@ -130,9 +130,6 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
-
-    click.secho(f'times: {times.shape}, response: {response.shape}', fg='yellow')
-
     sns.lineplot(x=times, y=response[:,0], label='$a_1$')
     ax = sns.lineplot(x=times, y=response[:,1], label='$a_2$')
     if preictal_start_time != -1:
