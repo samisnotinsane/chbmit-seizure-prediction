@@ -266,7 +266,8 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
 @click.option('--learning_algorithm', required=True, help='Machine learning algorithm for training. Choose either: \'Linear SVM\', \'RBF SVM\', \'Logistic Regression\'')
 @click.option('--data', required=True, help='Root directory of train test data.')
 @click.option('--learnersaveto', required=True, help='Path to directory where trained model will be saved.')
-def teach(patient, method, learning_algorithm, data, learnersaveto):
+@click.option('--plot_figures', is_flag=True, help='Root directory of train test data.')
+def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures):
     Path(learnersaveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     sset = 'Train' # use training set for model training
     # load data
@@ -298,16 +299,17 @@ def teach(patient, method, learning_algorithm, data, learnersaveto):
         times, class_b_response, _, _ = ARMA(class_b_data_hstacked)
 
         # AR response plots
-        saveto = './figures/chb01/AR'
-        class_a_savename = 'train_class_a_response'
-        class_b_savename = 'train_class_b_response'
-        saveformat = '.pdf'
-        preictal_start_time = -1
-        fs = 256
-        window = 512
-        times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
-        write_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, saveformat)
-        write_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, saveformat)
+        if plot_figures:
+            saveto = './figures/chb01/AR'
+            class_a_savename = 'train_class_a_response'
+            class_b_savename = 'train_class_b_response'
+            saveformat = '.pdf'
+            preictal_start_time = -1
+            fs = 256
+            window = 512
+            times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
+            write_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, saveformat)
+            write_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, saveformat)
 
         # target labels
         class_a_targets = -1 * np.ones(class_a_response.shape[0])
@@ -321,8 +323,9 @@ def teach(patient, method, learning_algorithm, data, learnersaveto):
         print(f'Merged target classes: {y.shape}')
 
         # visualise ARMA feature distribution
-        savename = 'train_jointplot'
-        write_ARMA_jointplot(X, y, savename, saveto, saveformat)
+        if plot_figures:
+            savename = 'train_jointplot'
+            write_ARMA_jointplot(X, y, savename, saveto, saveformat)
 
         # train and save model
         model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
