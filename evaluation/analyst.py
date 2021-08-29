@@ -84,7 +84,8 @@ def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model=None, wait_msg='Analysing...'):
 
             # classify features (a_h_k_m)
             if model != None:
-                p = model.predict(a_k.reshape(1, -1))              # TODO: should predict based on features a_h_k_m
+                # p = model.predict(a_k.reshape(1, -1)) 
+                p = model.predict(a_h_k_m.reshape(1, -1))              # TODO: should predict based on features a_h_k_m
                 preds.append(p)                                    # Add to prediction history
                 
                 buf_MA = np.append(buf_MA, p)                      # MA of prediction signal
@@ -235,8 +236,6 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
 
     X = merge_data(class_a_data, class_b_data)
     click.secho(f'Loaded merged data: {X.shape}')
-
-    click.secho(learner, fg='yellow')
     model = load(learner)
     print(f'Model: {model}')
     click.secho(f'Hyperparameters:\n {model.get_params()}')
@@ -247,21 +246,20 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
         fs = 256
         window = 512
         times, response, prediction, MA_prediction = ARMA(X, fs, model)
-
         print('times:', times.shape)
         print('prediction:', prediction.shape)
         print('MA_prediction:', MA_prediction.shape)
-
         
         class_a_data_hstacked = np.hstack(class_a_data)
         times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
         preictal_start_time = np.rint(np.max( (np.arange(0, class_a_data_hstacked.shape[1]) / fs) )) / 3600
-        print('preictal_start_time:', preictal_start_time)
+        print('Preictal start (h):', preictal_start_time)
 
         # plots
         savename = 'ARMA_response'
         write_response_plot(times_in_hour, response, preictal_start_time, savename, saveto, saveformat)
-        savename = 'ARMA_Pred_Linear_SVM'
+        learner_name = (learner.split('/')[-1]).split('.')[0]
+        savename = f'Prediction_{learner_name}_MA'
         write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat)
 
 @cli.command()
