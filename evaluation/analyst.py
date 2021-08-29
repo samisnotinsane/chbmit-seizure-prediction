@@ -158,10 +158,12 @@ def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time,
     ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
 
     plt.xticks(np.arange(0, x_lim_end+0.01, 0.25))
+    tickpos = [-1,1] # show only classes: -1 and 1
+    plt.yticks(tickpos,tickpos)
     plt.xlim([0,x_lim_end])
     plt.ylim([-2,2])
     plt.xlabel('Time, $h$')
-    plt.ylabel('A.U.')
+    plt.ylabel('Class')
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
@@ -205,6 +207,11 @@ def load_learner(models, patient, method, learner):
     model = load(modelpath)
     return model
 
+def make_learner_name_human_readable(learner_name):
+    kernel_name = learner_name.split('_')[2]
+    model_name = learner_name.split('_')[3]
+    return kernel_name + ' ' + model_name
+
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
 @click.option('--method', required=True, help='Feature extraction method. Choose either: \'ARMA\'  or \'Spectral\'')
@@ -220,10 +227,17 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
     Predict seizure from EEG data in real time.
     """
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
+    learner_name = (learner.split('/')[-1]).split('.')[0]
     if train:
         sset = 'Train'
+        x_lim_end = 1.5
+        response_savename = f'{method}_response_TRAIN'
+        prediction_savename = f'Prediction_{learner_name}_MA_TRAIN'
     else:
         sset = 'Test'
+        x_lim_end = 3.75
+        response_savename = f'{method}_response_TEST'
+        prediction_savename = f'Prediction_{learner_name}_MA_TEST'
     # load data
     click.echo(f'Dataset: {sset}')
     class_a_name = 'Interictal'
@@ -264,11 +278,9 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         print('Preictal start (h):', preictal_start_time)
 
         # plots
-        savename = 'ARMA_response'
-        write_response_plot(times_in_hour, response, preictal_start_time, savename, saveto, saveformat)
-        learner_name = (learner.split('/')[-1]).split('.')[0]
-        savename = f'Prediction_{learner_name}_MA'
-        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, learner_name, savename, saveto, saveformat)
+        write_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, saveformat, x_lim_end)
+        human_readable_learner_name = make_learner_name_human_readable(learner_name)
+        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end)
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
