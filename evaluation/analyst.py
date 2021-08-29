@@ -126,6 +126,7 @@ def ARMA(sig, fs=None, model=None, wait_msg='Analysing... '):
     return times, response, prediction, prediction_MA
 
 def write_response_plot(times, response, preictal_start_time, savename, saveto, saveformat, x_lim_end=3.75) -> None:
+    Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))

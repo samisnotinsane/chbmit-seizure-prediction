@@ -23,32 +23,32 @@
 
 # chb06 training with ARMA
 # -------------------------
-python analyst.py teach \
---patient='chb06' --method='ARMA' --learning_algorithm='Linear SVM' --data='./data' \
---learnersaveto='./models/chb06/AR'
+# python analyst.py teach \
+# --patient='chb06' --method='ARMA' --learning_algorithm='Linear SVM' --data='./data' \
+# --learnersaveto='./models/chb06/AR'
 
-python analyst.py teach \
---patient='chb06' --method='ARMA' --learning_algorithm='RBF SVM' --data='./data' \
---learnersaveto='./models/chb06/AR'
+# python analyst.py teach \
+# --patient='chb06' --method='ARMA' --learning_algorithm='RBF SVM' --data='./data' \
+# --learnersaveto='./models/chb06/AR'
 
-python analyst.py teach \
---patient='chb06' --method='ARMA' --learning_algorithm='Logistic Regression' --data='./data' \
---learnersaveto='./models/chb06/AR' --plot_figures
+# python analyst.py teach \
+# --patient='chb06' --method='ARMA' --learning_algorithm='Logistic Regression' --data='./data' \
+# --learnersaveto='./models/chb06/AR' --plot_figures
 # -------------------------
 
 # chb10 training with ARMA
 # -------------------------
-# python analyst.py teach \
-# --patient='chb10' --method='ARMA' --learning_algorithm='Linear SVM' --data='./data' \
-# --learnersaveto='./models/chb10/AR'
+python analyst.py teach \
+--patient='chb10' --method='ARMA' --learning_algorithm='Linear SVM' --data='./data' \
+--learnersaveto='./models/chb10/AR'
 
-# python analyst.py teach \
-# --patient='chb10' --method='ARMA' --learning_algorithm='RBF SVM' --data='./data' \
-# --learnersaveto='./models/chb10/AR'
+python analyst.py teach \
+--patient='chb10' --method='ARMA' --learning_algorithm='RBF SVM' --data='./data' \
+--learnersaveto='./models/chb10/AR'
 
-# python analyst.py teach \
-# --patient='chb10' --method='ARMA' --learning_algorithm='Logistic Regression' --data='./data' \
-# --learnersaveto='./models/chb10/AR' --plot_figures
+python analyst.py teach \
+--patient='chb10' --method='ARMA' --learning_algorithm='Logistic Regression' --data='./data' \
+--learnersaveto='./models/chb10/AR' --plot_figures
 # -------------------------
 
 # chb01 prediction with ARMA
@@ -71,22 +71,39 @@ python analyst.py teach \
 
 # chb06 prediction with ARMA
 # -------------------------
-python analyst.py think \
---patient='chb06' --method='ARMA' --learner='chb06_ARMA_Linear_SVM_v2' \
---data='./data' --models='./models' --saveto='./figures/chb06/AR' \
---saveformat='.pdf'
+# python analyst.py think \
+# --patient='chb06' --method='ARMA' --learner='chb06_ARMA_Linear_SVM_v2' \
+# --data='./data' --models='./models' --saveto='./figures/chb06/AR' \
+# --saveformat='.pdf'
 
-python analyst.py think \
---patient='chb06' --method='ARMA' --learner='chb06_ARMA_RBF_SVM_v2' \
---data='./data' --models='./models' --saveto='./figures/chb06/AR' \
---saveformat='.pdf'
+# python analyst.py think \
+# --patient='chb06' --method='ARMA' --learner='chb06_ARMA_RBF_SVM_v2' \
+# --data='./data' --models='./models' --saveto='./figures/chb06/AR' \
+# --saveformat='.pdf'
 
-python analyst.py think \
---patient='chb06' --method='ARMA' --learner='chb06_ARMA_Logistic_Regression_v2' \
---data='./data' --models='./models' --saveto='./figures/chb06/AR' \
---saveformat='.pdf'
-
+# python analyst.py think \
+# --patient='chb06' --method='ARMA' --learner='chb06_ARMA_Logistic_Regression_v2' \
+# --data='./data' --models='./models' --saveto='./figures/chb06/AR' \
+# --saveformat='.pdf'
 # -------------------------
+
+# chb10 prediction with ARMA
+# -------------------------
+python analyst.py think \
+--patient='chb10' --method='ARMA' --learner='chb10_ARMA_Linear_SVM_v2' \
+--data='./data' --models='./models' --saveto='./figures/chb10/AR' \
+--saveformat='.pdf'
+
+python analyst.py think \
+--patient='chb10' --method='ARMA' --learner='chb10_ARMA_RBF_SVM_v2' \
+--data='./data' --models='./models' --saveto='./figures/chb10/AR' \
+--saveformat='.pdf'
+
+python analyst.py think \
+--patient='chb10' --method='ARMA' --learner='chb10_ARMA_Logistic_Regression_v2' \
+--data='./data' --models='./models' --saveto='./figures/chb10/AR' \
+--saveformat='.pdf'
+# ------------------------- -------------------------  -------------------------
 
 # Prediction in DEBUG mode
 # -------------------------
