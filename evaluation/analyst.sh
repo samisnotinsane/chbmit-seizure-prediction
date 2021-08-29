@@ -54,18 +54,18 @@
 # Prediction
 # -------------------------
 python analyst.py think \
---patient='chb01' --method='ARMA' --learner='./models/chb01/AR/chb01_ARMA_Linear_SVM_v2.joblib' \
+--patient='chb01' --method='ARMA' --learner='chb01_ARMA_Linear_SVM_v2' \
 --data='./data' --models='./models' --saveto='./figures/chb01/AR' \
 --saveformat='.pdf'
 
 python analyst.py think \
---patient='chb01' --method='ARMA' --learner='./models/chb01/AR/chb01_ARMA_RBF_SVM_v2.joblib' \
---data='./data' --saveto='./figures/chb01/AR' \
+--patient='chb01' --method='ARMA' --learner='chb01_ARMA_RBF_SVM_v2' \
+--data='./data' --models='./models' --saveto='./figures/chb01/AR' \
 --saveformat='.pdf'
 
 python analyst.py think \
---patient='chb01' --method='ARMA' --learner='./models/chb01/AR/chb01_ARMA_Logistic_Regression_v2.joblib' \
---data='./data' --saveto='./figures/chb01/AR' \
+--patient='chb01' --method='ARMA' --learner='chb01_ARMA_Logistic_Regression_v2' \
+--data='./data' --models='./models' --saveto='./figures/chb01/AR' \
 --saveformat='.pdf'
 # -------------------------
 

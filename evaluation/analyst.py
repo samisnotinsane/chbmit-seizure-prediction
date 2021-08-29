@@ -16,8 +16,8 @@ import pandas as pd
 def cli():
     pass
 
-def class_files(patient, sset, class_name) -> list:
-    root = './data' + '/' + sset + '/' + patient
+def class_files(patient, sset, class_name, rootdir='./data') -> list:
+    root = rootdir + '/' + sset + '/' + patient
     class_a = 'Interictal'
     class_b = 'Preictal'
     if class_name == class_a:
@@ -51,10 +51,9 @@ def merge_data(array_a, array_b) -> np.ndarray:
     hstacked_b = np.hstack(array_b)
     return np.hstack((hstacked_a, hstacked_b))
 
-def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model=None, wait_msg='Analysing...'):
+def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model=None, wait_msg=None):
     k_list = []                                                # Sequential buffer for time index in prediction point _k
     a_h_k_list = []                                            # Sequential buffer for AR signal samples
-    a_h_k_m_list = []
     a_k_list = []                                              # Sequential buffer for ARMA signal samples
     buf_MA = -1 * np.ones((0))                                 # MA prediction signal buffer
     preds = []                                                 # Prediction signal history
@@ -80,43 +79,42 @@ def ARMA_core(sig, Ik, n_c, n, n_i, m, mp, model=None, wait_msg='Analysing...'):
                 if len(a_h_k_list) > m:                        # Only begin smoothing once unit of time elapsed is greater than m
                     a_k = c[_j] * a_h_k_list[a_h_k_idx - _j]
             a_k = np.mean(a_k, axis=0)                         # Mean over channels
-            a_h_k_m = np.mean(a_h, axis=0)
-
-            # classify features (a_h_k_m)
+            # classify features (a_k)
             if model != None:
                 # p = model.predict(a_k.reshape(1, -1)) 
-                p = model.predict(a_h_k_m.reshape(1, -1))              # TODO: should predict based on features a_h_k_m
+                p = model.predict(a_k.reshape(1, -1))              # predict based on AR parameters a_k
                 preds.append(p)                                    # Add to prediction history
-                
                 buf_MA = np.append(buf_MA, p)                      # MA of prediction signal
                 p_MA = np.mean(buf_MA)
                 if len(buf_MA) == mp:
                     buf_MA = np.delete(buf_MA, 0)
                 p_MAs.append(p_MA)                                 # Add to MA prediction history
             k_list.append(_k)                                  # Add to prediction time history
-            a_h_k_list.append(a_h)                             # Add to AR response history
-            a_h_k_m_list.append(a_h_k_m)
+            a_h_k_list.append(a_h)                             # Add reconstructed ARMA history (required by algorithm)
             a_k_list.append(a_k)                               # Add to ARMA response history
+            
         # END decimation condition
     # END sliding window loop
-    return k_list, a_h_k_m_list, preds, p_MAs
+    return k_list, a_k_list, preds, p_MAs
 
-def ARMA(sig, fs=256, model=None):
+def ARMA(sig, fs=None, model=None, wait_msg='Analysing... '):
     # initialise ARMA parameters
-    # fs: sampling frequency in Hz
+    fs = 256           # sampling frequency in Hz
     window = 512       # window width
     order = 2          # Second order model AR(2)
-    feature_mem = 30   # MA smoothing for AR features
-    predict_mem = 5    # MA smoothing for prediction signal
+    feature_mem = 1    # MA smoothing for AR features
+    predict_mem = 10   # MA smoothing for prediction signal
+    fp = fs/window     # Prediction frequency
     print(f'ARMA{order, feature_mem}')
     print(f'Window size: {window}')
     print(f'Sampling frequency: {fs} Hz')
-    print(f'Prediction frequency: {fs/window} Hz')
+    print(f'Prediction frequency: {fp} Hz')
+    print(f'AR parameter smoothing: {feature_mem}')
     print(f'Prediction smoothing: {predict_mem}')
 
     n_c = sig.shape[0] # channel count in EEG
     n = sig.shape[1] #  sample count in EEG
-    _ks, a_h_k, p_k, p_MA_k = ARMA_core(sig, window, n_c, n, order, feature_mem, predict_mem, model)
+    _ks, a_h_k, p_k, p_MA_k = ARMA_core(sig, window, n_c, n, order, feature_mem, predict_mem, model, wait_msg)
     times = np.hstack(_ks)
     response = np.vstack(a_h_k)
     if len(p_k) > 0:
@@ -127,7 +125,7 @@ def ARMA(sig, fs=256, model=None):
         prediction_MA = np.zeros_like(times)
     return times, response, prediction, prediction_MA
 
-def write_response_plot(times, response, preictal_start_time, savename, saveto, saveformat) -> None:
+def write_response_plot(times, response, preictal_start_time, savename, saveto, saveformat, x_lim_end=3.75) -> None:
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
@@ -137,9 +135,9 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
         ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
         ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
 
-    # plt.xticks(np.arange(0,3.76,0.25))
-    # plt.xlim([0,3.75])
-    plt.ylim([-1.2,2])
+    plt.xticks(np.arange(0,3.76,0.25))
+    plt.xlim([0,x_lim_end])
+    # plt.ylim([-0.2,0.2])
     plt.xlabel('Time, $h$')
     plt.ylabel('A.U.')
     plt.legend(loc=3)
@@ -147,19 +145,19 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.savefig(savepath)
     click.secho(f'Response plot saved to: {savepath}')
 
-def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat) -> None:
+def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75) -> None:
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
-    ax = sns.lineplot(x=times, y=prediction, label='ARMA(2) Linear SVM')
+    ax = sns.lineplot(x=times, y=prediction, label=model_name)
     sns.lineplot(x=times, y=MA_prediction, label='MA')
     ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
     ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
     ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
 
-    # plt.xticks(np.arange(0,3.76,0.25))
-    # plt.xlim([0,3.75])
-    plt.ylim([-1.2,2])
+    plt.xticks(np.arange(0, x_lim_end+0.01, 0.25))
+    plt.xlim([0,x_lim_end])
+    plt.ylim([-2,2])
     plt.xlabel('Time, $h$')
     plt.ylabel('A.U.')
     plt.legend(loc=3)
@@ -199,16 +197,23 @@ def learn_with_and_remember(X, y, model_name, savename, saveto):
     click.secho('[Done]', fg='green')
     click.secho(f'Model saved to: {savepath}')
 
+def load_learner(models, patient, method, learner):
+    fileformat = '.joblib'
+    modelpath = models + '/' + patient + '/' + method[0:2] + '/' + learner + fileformat
+    model = load(modelpath)
+    return model
+
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
 @click.option('--method', required=True, help='Feature extraction method. Choose either: \'ARMA\'  or \'Spectral\'')
 @click.option('--learner', required=True, help='Path to trained model')
 @click.option('--train', required=True, is_flag=True, help='Runs on training data if supplied. Otherwise runs on test data')
 @click.option('--data', required=True, help='Root directory of train test data.')
+@click.option('--models', required=True, help='Root directory of models.')
 @click.option('--saveto', required=True, help='Path to directory where generated plots will be saved.')
 @click.option('--saveformat', help='File format of plot (e.g. .png, .pdf)')
 @click.option('--debug', is_flag=True, help='Uses smaller portion of data for quick runs')
-def think(patient, method, learner, train, data, saveto, saveformat, debug):
+def think(patient, method, learner, train, data, models, saveto, saveformat, debug):
     """
     Predict seizure from EEG data in real time.
     """
@@ -221,11 +226,11 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
     click.echo(f'Dataset: {sset}')
     class_a_name = 'Interictal'
     class_b_name = 'Preictal'
-
     class_a_files = class_files(patient, sset, class_a_name)
     class_b_files = class_files(patient, sset, class_b_name)
-
+    
     if debug:
+        # load less data in debug mode
         class_a_files = class_a_files[0:1]
         class_b_files = class_b_files[0:1]
 
@@ -236,7 +241,8 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
 
     X = merge_data(class_a_data, class_b_data)
     click.secho(f'Loaded merged data: {X.shape}')
-    model = load(learner)
+
+    model = load_learner(models, patient, method, learner)
     print(f'Model: {model}')
     click.secho(f'Hyperparameters:\n {model.get_params()}')
 
@@ -260,7 +266,7 @@ def think(patient, method, learner, train, data, saveto, saveformat, debug):
         write_response_plot(times_in_hour, response, preictal_start_time, savename, saveto, saveformat)
         learner_name = (learner.split('/')[-1]).split('.')[0]
         savename = f'Prediction_{learner_name}_MA'
-        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, savename, saveto, saveformat)
+        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, learner_name, savename, saveto, saveformat)
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -277,8 +283,8 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
     click.echo(f'Dataset: {sset}')
     class_a_name = 'Interictal'
     class_b_name = 'Preictal'
-    class_a_files = class_files(patient, sset, class_a_name)
-    class_b_files = class_files(patient, sset, class_b_name)
+    class_a_files = class_files(patient, sset, class_a_name, rootdir=data)
+    class_b_files = class_files(patient, sset, class_b_name, rootdir=data)
     class_a_data = load_data(class_a_files)
     class_b_data = load_data(class_b_files)
     click.echo(f'Loaded {len(class_a_files)} {class_a_name} arrays')
@@ -294,16 +300,17 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
         click.secho(f'Generating features for class: {class_a_name}', fg='blue')
         print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
-        _, class_a_response, _, _ = ARMA(class_a_data_hstacked)
+        wait_msg = 'Extracting features... '
+        _, class_a_response, _, _ = ARMA(class_a_data_hstacked, wait_msg=wait_msg)
 
         click.secho(f'Generating features for class: {class_b_name}', fg='blue')
         print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
         print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
-        times, class_b_response, _, _ = ARMA(class_b_data_hstacked)
+        times, class_b_response, _, _ = ARMA(class_b_data_hstacked, wait_msg=wait_msg)
 
         # AR response plots
         if plot_figures:
-            saveto = './figures/chb01/AR'
+            saveto = f'./figures/{patient}/AR'
             class_a_savename = 'train_class_a_response'
             class_b_savename = 'train_class_b_response'
             saveformat = '.pdf'
@@ -311,8 +318,8 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
             fs = 256
             window = 512
             times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
-            write_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, saveformat)
-            write_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, saveformat)
+            write_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, saveformat, x_lim_end=0.75)
+            write_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, saveformat, x_lim_end=0.75)
 
         # target labels
         class_a_targets = -1 * np.ones(class_a_response.shape[0])
@@ -332,7 +339,7 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
 
         # train and save model
         model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
-        savename = f'chb01_ARMA_{model_name}_v2'
+        savename = f'{patient}_{method}_{model_name}_v2'
         learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
 
     click.secho(f'Completed teaching {learning_algorithm} about patient {patient} using {method}.', fg='green')
