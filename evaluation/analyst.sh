@@ -153,9 +153,9 @@
 # --patient='chb10' --method='ARMA' --learner='chb10_ARMA_Logistic_Regression_v2' \
 # --data='./data' --models='./models' --saveto='./figures/chb10/AR' \
 # --saveformat='.pdf'
-# ------------------------- -------------------------  -------------------------
+# -------------------------
 
-# Prediction in DEBUG mode
+# Prediction in DEBUG mode with ARMA
 # -------------------------
 # python analyst.py think \
 # --patient='chb01' --method='ARMA' --learner='./models/chb01/AR/chb01_ARMA_Linear_SVM_v2.joblib' \
@@ -171,3 +171,17 @@
 # --patient='chb01' --method='ARMA' --learner='./models/chb01/AR/chb01_ARMA_RBF_SVM_v2.joblib' \
 # --data='./data' --saveto='./figures/chb01/AR' \
 # --saveformat='.pdf' --debug
+
+# ------------------------- -------------------------  -------------------------
+
+# chb01 training with Spectral Power in Band
+# -------------------------------------------------- 
+python analyst.py teach \
+--patient='chb01' --method='Spectral' --learning_algorithm='Linear SVM' --data='./data' \
+--learnersaveto='./models/chb01/AR'
+
+
+
+
+
+# -------------------------------------------------- 

@@ -2,6 +2,7 @@
 
 import os
 import click
+import yasa
 from tqdm import tqdm
 import numpy as np
 from joblib import load, dump
@@ -213,6 +214,25 @@ def make_learner_name_human_readable(learner_name):
     model_name = learner_name.split('_')[3]
     return kernel_name + ' ' + model_name
 
+def get_neural_rhythm_bands():
+    bands = [(0.1, 4, 'Delta'), (4, 8, 'Theta'), (8, 12, 'Alpha'), (12, 30, 'Beta'), (30, 70, 'Low Gamma'), (70, 127.9, 'High Gamma')]
+    band_names = ['Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma']
+    return bands, band_names
+
+def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_window_size=20, fft_window_name='hann'):
+    N = fs * online_window_size
+    fp = fs/N
+    n = sig.shape[1]
+    neural_bandpower_list = []
+    for _k in tqdm(range(N, n)):
+        if(_k % N == 0):
+            w_start = _k - N
+            x_t = sig[:, w_start:_k]
+            df = yasa.bandpower(x_t, sf=fs, win_sec=fft_window_size, bands=bands, bandpass=True, relative=True, kwargs_welch={'window': fft_window_name})
+            df = df[band_names]
+            neural_bandpower_list.append(df.to_numpy())
+    return np.vstack(neural_bandpower_list)
+
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
 @click.option('--method', required=True, help='Feature extraction method. Choose either: \'ARMA\'  or \'Spectral\'')
@@ -313,7 +333,7 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
     class_b_data_hstacked = np.hstack(class_b_data)
 
     # generate features
-    if method == 'ARMA':
+    if method.upper() == 'ARMA':
         click.secho(f'Generating features for class: {class_a_name}', fg='blue')
         print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
@@ -358,6 +378,11 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
         model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
         savename = f'{patient}_{method}_{model_name}_v2'
         learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
+
+    if method.lower() == 'spectral':
+        bands, band_names = get_neural_rhythm_bands()
+        pib = neural_power_core(fs=256, sliding_window=35, bands=bands, band_names=band_names, fft_window='hann', fft_window_duration=20)
+        print('Neural Rhythms:', bands)
 
     click.secho(f'Completed teaching {learning_algorithm} about patient {patient} using {method}.', fg='green')
 
