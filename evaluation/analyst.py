@@ -146,14 +146,15 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.savefig(savepath)
     click.secho(f'Response plot saved to: {savepath}')
 
-def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75) -> None:
+def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True) -> None:
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
     ax = sns.lineplot(x=times, y=prediction, label=model_name)
     sns.lineplot(x=times, y=MA_prediction, label='MA')
-    ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
+    if alarm_threshold:
+        ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
     ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
     ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
 
@@ -233,11 +234,13 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         x_lim_end = 1.5
         response_savename = f'{method}_response_TRAIN'
         prediction_savename = f'Prediction_{learner_name}_MA_TRAIN'
+        alarm_threshold = False
     else:
         sset = 'Test'
         x_lim_end = 3.75
         response_savename = f'{method}_response_TEST'
         prediction_savename = f'Prediction_{learner_name}_MA_TEST'
+        alarm_threshold = True
     # load data
     click.echo(f'Dataset: {sset}')
     class_a_name = 'Interictal'
@@ -278,9 +281,9 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         print('Preictal start (h):', preictal_start_time)
 
         # plots
-        write_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, saveformat, x_lim_end)
+        write_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, saveformat, x_lim_end=x_lim_end)
         human_readable_learner_name = make_learner_name_human_readable(learner_name)
-        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end)
+        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold)
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
