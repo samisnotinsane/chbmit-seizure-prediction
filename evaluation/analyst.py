@@ -127,6 +127,7 @@ def ARMA(sig, fs=None, model=None, wait_msg='Analysing... '):
     return times, response, prediction, prediction_MA
 
 def write_response_plot(times, response, preictal_start_time, savename, saveto, saveformat, x_lim_end=3.75) -> None:
+    print('Generating plot...', end='')
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
@@ -145,9 +146,11 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
+    click.secho('[Done]', fg='green')
     click.secho(f'Response plot saved to: {savepath}')
 
 def write_spectral_response_plot(times, response, preictal_start_time, savename, saveto, saveformat='.pdf', x_lim_end=3.75):
+    print('Generating plot...', end='')
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     delta = response[:,0] # parse array into named bands
@@ -176,9 +179,11 @@ def write_spectral_response_plot(times, response, preictal_start_time, savename,
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
+    click.secho('[Done]', fg='green')
     click.secho(f'Response plot saved to: {savepath}')
 
 def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True) -> None:
+    print('Generating plot...', end='')
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
@@ -200,6 +205,7 @@ def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time,
     plt.legend(loc=3)
     plt.tight_layout()
     plt.savefig(savepath)
+    click.secho('[Done]', fg='green')
     click.secho(f'Prediction plot saved to: {savepath}')
 
 def write_ARMA_jointplot(X, y, savename, saveto, saveformat) -> None:
@@ -212,11 +218,28 @@ def write_ARMA_jointplot(X, y, savename, saveto, saveformat) -> None:
     palette = sns.color_palette('Set2', n_colors=2)
     sns.jointplot(data=df, x='Feature 1', y='Feature 2', hue='Period', kind='kde', palette=palette, alpha=0.6)
     plt.tight_layout()
-    click.secho('[Done]', fg='green')
     plt.savefig(savepath)
+    click.secho('[Done]', fg='green')
     click.secho(f'ARMA jointplot saved to: {savepath}')
 
+def write_spectral_pairplot(X, y, band_names, savename, saveto, saveformat='.pdf') -> None:
+    print('Generating plot...', end='')
+    savepath = saveto + '/' + savename + saveformat
+    df = pd.DataFrame(X, columns=band_names)
+    df['Period'] = y
+    di = {-1: "Interictal", 1: "Preictal"} # map numeric target to string label
+    df.replace({"Period": di}, inplace=True)
+    palette = sns.color_palette("Set2", n_colors=2)
+    sns.pairplot(df, hue='Period', height=1.8, aspect=1.8, palette=palette,
+                    plot_kws=dict(edgecolor="k", linewidth=0.5),
+                    diag_kind="kde", diag_kws=dict(shade=True))
+    plt.tight_layout()
+    plt.savefig(savepath)
+    click.secho('[Done]', fg='green')
+    click.secho(f'Spectral pairplot saved to: {savepath}')
+
 def learn_with_and_remember(X, y, model_name, savename, saveto):
+    print('Serialising model...', end='')
     if model_name == 'Linear SVM':
             # click.secho('Training Linear Kernel SVM', fg='blue')
             model = SVC(kernel='linear', class_weight='balanced')
@@ -229,15 +252,16 @@ def learn_with_and_remember(X, y, model_name, savename, saveto):
     model.fit(X, y)
     saveformat = '.joblib'
     savepath = saveto + '/' + savename + saveformat
-    print('Serialising model...', end='')
     dump(model, savepath)
     click.secho('[Done]', fg='green')
     click.secho(f'Model saved to: {savepath}')
 
 def load_learner(models, patient, method, learner):
+    print('Loading model...', end='')
     fileformat = '.joblib'
     modelpath = models + '/' + patient + '/' + method[0:2] + '/' + learner + fileformat
     model = load(modelpath)
+    click.secho('[Done]', fg='green')
     return model
 
 def make_learner_name_human_readable(learner_name):
@@ -287,7 +311,19 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
     bandpowers = np.vstack(bandpower_list)
     return times, bandpowers
 
-
+def create_X_y(class_a_response, class_b_response):
+    print('Creating X, y...', end='')
+    # target labels
+    class_a_targets = -1 * np.ones(class_a_response.shape[0])
+    class_b_targets = np.ones(class_b_response.shape[0])
+    # merge input classes
+    X = np.vstack((class_a_response, class_b_response))
+    # merge target classes
+    y = np.hstack((class_a_targets, class_b_targets))
+    click.secho('[Done]', fg='green')
+    print(f'Merged input dimensionality: {X.shape}')
+    print(f'Merged target dimensionality: {y.shape}')
+    return X, y
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -369,7 +405,6 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
 @click.option('--learnersaveto', required=True, help='Path to directory where trained model will be saved.')
 @click.option('--plot_figures', is_flag=True, help='Root directory of train test data.')
 def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures):
-    click.secho(f'Begin teaching {learning_algorithm} about patient {patient} using {method}.', fg='blue')
     Path(learnersaveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     sset = 'Train' # use training set for model training
     # load data
@@ -392,14 +427,15 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
 
     # generate features
     if method.upper() == 'ARMA':
-        click.secho(f'Generating features for class: {class_a_name}', fg='blue')
+        click.secho(f'Begin teaching {learning_algorithm} about patient {patient} using {method}.', fg='blue')
+        click.secho(f'Generating features for class: {class_a_name}')
         print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
         wait_msg = 'Extracting features... '
         _, class_a_response, _, _ = ARMA(class_a_data_hstacked, wait_msg=wait_msg)
         print(f'{class_a_name} response dimensionality: {class_a_response.shape}')
 
-        click.secho(f'Generating features for class: {class_b_name}', fg='blue')
+        click.secho(f'Generating features for class: {class_b_name}')
         print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
         print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
         times, class_b_response, _, _ = ARMA(class_b_data_hstacked, wait_msg=wait_msg)
@@ -419,16 +455,7 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
             write_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, saveformat, x_lim_end=0.75)
             write_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, saveformat, x_lim_end=0.75)
 
-        # target labels
-        class_a_targets = -1 * np.ones(class_a_response.shape[0])
-        class_b_targets = np.ones(class_b_response.shape[0])
-        
-        # merge input classes
-        X = np.vstack((class_a_response, class_b_response))
-        print(f'Merged input classes: {X.shape}')
-        # merge target classes
-        y = np.hstack((class_a_targets, class_b_targets))
-        print(f'Merged target classes: {y.shape}')
+        X, y = create_X_y(class_a_response, class_b_response)
 
         # visualise ARMA feature distribution
         if plot_figures:
@@ -441,24 +468,25 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
         learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
 
     if method.lower() == 'spectral':
+        click.secho(f'Begin teaching {learning_algorithm} about patient {patient} using {method}.', fg='magenta')
         bands, band_names = get_neural_rhythm_bands()
         wait_msg = 'Extracting features... '
-        online_window_size = 35 # CAUTION: Do not decrease!
+        online_window_size = 35 # WARNING: Do not change value without knowing what you're doing! Increasing value will not produce features for full time length. Decreasing will distort signal.
         fs = 256
-        click.secho(f'Generating features for class: {class_a_name}', fg='blue')
+        click.secho(f'Generating features for class: {class_a_name}')
         print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
         _, class_a_response = neural_power_core(sig=class_a_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
         print(f'{class_a_name} response dimensionality: {class_a_response.shape}')
 
-        click.secho(f'Generating features for class: {class_b_name}', fg='blue')
+        click.secho(f'Generating features for class: {class_b_name}')
         print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
         print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
         times, class_b_response = neural_power_core(sig=class_b_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
         print(f'{class_b_name} response dimensionality: {class_b_response.shape}')
         print(f'{method} times dimensionality: {times.shape}')
 
-        # Spectral bandpower response plots
+        # Spectral response plots
         if plot_figures:
             saveto = f'./figures/{patient}/Spectral'
             class_a_savename = 'train_class_a_response'
@@ -469,7 +497,17 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
             write_spectral_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, x_lim_end=0.75)
             write_spectral_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, x_lim_end=0.75)
         
-        
+        X, y = create_X_y(class_a_response, class_b_response)
+
+        # visualise ARMA feature distribution
+        if plot_figures:
+            savename = 'train_pairplot'
+            write_spectral_pairplot(X, y, band_names, savename, saveto)
+
+        # # train and save model
+        # model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
+        # savename = f'{patient}_{method}_{model_name}_v2'
+        # learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
 
     click.secho(f'Completed teaching {learning_algorithm} about patient {patient} using {method}.', fg='green')
 
