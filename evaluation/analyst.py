@@ -356,7 +356,9 @@ def create_X_y(class_a_response, class_b_response):
 @click.option('--saveto', required=True, help='Path to directory where generated plots will be saved.')
 @click.option('--saveformat', help='File format of plot (e.g. .png, .pdf)')
 @click.option('--debug', is_flag=True, help='Uses smaller portion of data for quick runs')
-def think(patient, method, learner, train, data, models, saveto, saveformat, debug):
+@click.option('--alarm_threshold', is_flag=True, help='Adds a threshold line in prediction plot.')
+@click.option('--target_label', is_flag=True, help='Adds colours for interictal and preictal periods in prediction plot.')
+def think(patient, method, learner, train, data, models, saveto, saveformat, debug, alarm_threshold, target_label):
     """
     Predict seizure from EEG data in real time.
     """
@@ -368,13 +370,11 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         x_lim_end = 1.5
         response_savename = f'{method}_response_TRAIN'
         prediction_savename = f'Prediction_{learner_name}_MA_TRAIN'
-        alarm_threshold = False
     else:
         sset = 'Test'
         x_lim_end = 3.75
         response_savename = f'{method}_response_TEST'
         prediction_savename = f'Prediction_{learner_name}_MA_TEST'
-        alarm_threshold = True
     # load data
     click.echo(f'Dataset: {sset}')
     class_a_name = 'Interictal'
@@ -414,6 +414,8 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
         preictal_start_time = np.rint(np.max( (np.arange(0, class_a_data_hstacked.shape[1]) / fs) )) / 3600
         print('Preictal start (h):', preictal_start_time)
+        if target_label == False:
+            preictal_start_time = -1
 
         # plots
         write_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, saveformat, x_lim_end=x_lim_end)
@@ -434,6 +436,8 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         times_in_hour = np.arange(0, times.shape[0]) / (fs/(fs*online_window_size)) / 3600
         preictal_start_time = np.rint(np.max( (np.arange(0, class_a_data_hstacked.shape[1]) / fs) )) / 3600
         print('Preictal start (h):', preictal_start_time)
+        if target_label == False:
+            preictal_start_time = -1
 
         # plots
         write_spectral_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, x_lim_end=1.50)
