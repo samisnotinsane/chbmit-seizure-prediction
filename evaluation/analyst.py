@@ -24,12 +24,12 @@ def class_files(patient, sset, class_name, rootdir='./data') -> list:
     if class_name == class_a:
         class_a_dir = root + '/' + class_a
         file_names = [class_a_dir + '/' + x for x in os.listdir(class_a_dir) if not x.startswith('.')]
-        print(f'Reading {len(file_names)} {class_name} files from: {class_a_dir}')
+        print(f'Found {len(file_names)} {class_name} files in: {class_a_dir}')
         return file_names
     if class_name == class_b:
         class_b_dir = root + '/' + class_b
         file_names = [class_b_dir + '/' + x for x in os.listdir(class_b_dir) if not x.startswith('.')]
-        print(f'Reading {len(file_names)} {class_name} files from: {class_b_dir}')
+        print(f'Found {len(file_names)} {class_name} files in: {class_b_dir}')
         return file_names
     return []
 
@@ -147,6 +147,37 @@ def write_response_plot(times, response, preictal_start_time, savename, saveto, 
     plt.savefig(savepath)
     click.secho(f'Response plot saved to: {savepath}')
 
+def write_spectral_response_plot(times, response, preictal_start_time, savename, saveto, saveformat='.pdf', x_lim_end=3.75):
+    Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
+    savepath = saveto + '/' + savename + saveformat
+    delta = response[:,0] # parse array into named bands
+    theta = response[:,1]
+    alpha = response[:,2]
+    beta = response[:,3]
+    low_gamma = response[:,4]
+    high_gamma = response[:,5]
+
+    sns.set_palette(sns.color_palette('Set2'))
+    plt.figure(figsize=(12,6))
+    sns.lineplot(x=times, y=delta, label=r'$\delta$')
+    sns.lineplot(x=times, y=theta, label=r'$\theta$')
+    sns.lineplot(x=times, y=alpha, label=r'$\alpha$')
+    sns.lineplot(x=times, y=beta, label=r'$\beta$')
+    sns.lineplot(x=times, y=low_gamma, label=r'$\gamma$')
+    ax = sns.lineplot(x=times, y=high_gamma, label=r'$\Gamma$')
+    if preictal_start_time != -1:
+        ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
+        ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
+    plt.xticks(np.arange(0,3.76,0.25))
+    plt.xlim([0,x_lim_end])
+    plt.ylim([0,1])
+    plt.xlabel('Time, $h$')
+    plt.ylabel('Relative Bandpower')
+    plt.legend(loc=3)
+    plt.tight_layout()
+    plt.savefig(savepath)
+    click.secho(f'Response plot saved to: {savepath}')
+
 def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True) -> None:
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
@@ -219,19 +250,44 @@ def get_neural_rhythm_bands():
     band_names = ['Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma']
     return bands, band_names
 
-def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_window_size=20, fft_window_name='hann'):
+def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_window_size=20, fft_window_name='hann', model=None, wait_msg='Analysing... '):
     N = fs * online_window_size
-    fp = fs/N
     n = sig.shape[1]
-    neural_bandpower_list = []
-    for _k in tqdm(range(N, n)):
+    fp = fs/N
+    print('Spectral configuration:')
+    print(f'Input length: {n}')
+    print(f'Input channels: {sig.shape[0]}')
+    print(f'Sampling frequency: {fs} Hz')
+    print(f'Prediction frequency: {fp} Hz')
+    print(f'Stream buffer size: {online_window_size}')
+    print(f'FFT window: {fft_window_name}')
+    print(f'FFT window size: {fft_window_size}')
+    print(f'Spectral bands: {bands}')
+
+    time_list = [] # prediction time history
+    bandpower_list = [] # bandpower history
+    predict_list = [] # prediction history
+    Ik = N
+    for _k in tqdm(range(Ik, n), desc=wait_msg):
         if(_k % N == 0):
-            w_start = _k - N
+            w_start = _k - Ik
             x_t = sig[:, w_start:_k]
             df = yasa.bandpower(x_t, sf=fs, win_sec=fft_window_size, bands=bands, bandpass=True, relative=True, kwargs_welch={'window': fft_window_name})
-            df = df[band_names]
-            neural_bandpower_list.append(df.to_numpy())
-    return np.vstack(neural_bandpower_list)
+            data = df[band_names].to_numpy()
+            data_mean = np.mean(data, axis=0)
+            if model != None:
+                prediction = model.predict(data.reshape(1, -1))      # Model prediction
+                predict_list.append(prediction)
+            time_list.append(_k)
+            bandpower_list.append(data_mean)
+    print('time_list len:', len(time_list))
+    print('bandpower_list len:', len(bandpower_list))
+    prediction_times = np.hstack(time_list)
+    times = np.arange(0, prediction_times.shape[0]) / (fs/N) / 3600   # predict signal times (h)
+    bandpowers = np.vstack(bandpower_list)
+    return times, bandpowers
+
+
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -327,10 +383,12 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
     click.echo(f'Loaded {len(class_a_files)} {class_a_name} arrays')
     click.echo(f'Loaded {len(class_a_files)} {class_b_name} arrays')
     
-    print('class_a_data len:', len(class_a_data))
-    print('class_a_data[0].shape:', class_a_data[0].shape)
+    print(f'Dimensionality of single array in {class_a_name} class:', class_a_data[0].shape)
+    print(f'Dimensionality of single array in {class_b_name} class:', class_b_data[0].shape)
     class_a_data_hstacked = np.hstack(class_a_data)
     class_b_data_hstacked = np.hstack(class_b_data)
+    print(f'Dimensionality of {len(class_a_files)} {class_a_name} class arrays: {class_a_data_hstacked.shape}')
+    print(f'Dimensionality of {len(class_b_files)} {class_b_name} class arrays: {class_b_data_hstacked.shape}')
 
     # generate features
     if method.upper() == 'ARMA':
@@ -339,11 +397,14 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
         wait_msg = 'Extracting features... '
         _, class_a_response, _, _ = ARMA(class_a_data_hstacked, wait_msg=wait_msg)
+        print(f'{class_a_name} response dimensionality: {class_a_response.shape}')
 
         click.secho(f'Generating features for class: {class_b_name}', fg='blue')
         print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
         print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
         times, class_b_response, _, _ = ARMA(class_b_data_hstacked, wait_msg=wait_msg)
+        print(f'{class_b_name} response dimensionality: {class_b_response.shape}')
+        print(f'{method} times dimensionality: {times.shape}')
 
         # AR response plots
         if plot_figures:
@@ -381,8 +442,34 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
 
     if method.lower() == 'spectral':
         bands, band_names = get_neural_rhythm_bands()
-        pib = neural_power_core(fs=256, sliding_window=35, bands=bands, band_names=band_names, fft_window='hann', fft_window_duration=20)
-        print('Neural Rhythms:', bands)
+        wait_msg = 'Extracting features... '
+        online_window_size = 35 # CAUTION: Do not decrease!
+        fs = 256
+        click.secho(f'Generating features for class: {class_a_name}', fg='blue')
+        print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
+        print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
+        _, class_a_response = neural_power_core(sig=class_a_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
+        print(f'{class_a_name} response dimensionality: {class_a_response.shape}')
+
+        click.secho(f'Generating features for class: {class_b_name}', fg='blue')
+        print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
+        print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
+        times, class_b_response = neural_power_core(sig=class_b_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
+        print(f'{class_b_name} response dimensionality: {class_b_response.shape}')
+        print(f'{method} times dimensionality: {times.shape}')
+
+        # Spectral bandpower response plots
+        if plot_figures:
+            saveto = f'./figures/{patient}/Spectral'
+            class_a_savename = 'train_class_a_response'
+            class_b_savename = 'train_class_b_response'
+            preictal_start_time = -1
+            window = fs*online_window_size
+            times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
+            write_spectral_response_plot(times_in_hour, class_a_response, preictal_start_time, class_a_savename, saveto, x_lim_end=0.75)
+            write_spectral_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, x_lim_end=0.75)
+        
+        
 
     click.secho(f'Completed teaching {learning_algorithm} about patient {patient} using {method}.', fg='green')
 

@@ -5,6 +5,8 @@
 # python data_gen_train_test.py
 # -------------------------
 
+echo 'Invoking...'
+
 # chb01 training with ARMA
 # -------------------------
 # python analyst.py teach \
@@ -178,10 +180,7 @@
 # -------------------------------------------------- 
 python analyst.py teach \
 --patient='chb01' --method='Spectral' --learning_algorithm='Linear SVM' --data='./data' \
---learnersaveto='./models/chb01/AR'
-
-
-
-
+--learnersaveto='./models/chb01/Spectral' --plot_figures
 
 # -------------------------------------------------- 
+echo 'analyst.sh terminated'
