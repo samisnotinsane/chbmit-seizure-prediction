@@ -194,13 +194,11 @@ def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time,
         ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
     if preictal_start_time != -1:
         ymin, ymax = plt.ylim()
-        # ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
-        # ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
-        ax.fill_between(times, ymin, ymax, where= times<preictal_start_time, facecolor='#9cd34a', alpha=0.3, label='Interictal')
-        ax.fill_between(times, ymin, ymax, where= times>preictal_start_time, facecolor='#ffd429', alpha=0.3, label='Preictal')
+        ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
+        ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
+        # ax.fill_between(times, ymin, ymax, where= times<preictal_start_time, facecolor='#9cd34a', alpha=0.3, label='Interictal')
+        # ax.fill_between(times, ymin, ymax, where= times>preictal_start_time, facecolor='#ffd429', alpha=0.3, label='Preictal')
         
-
-
     plt.xticks(np.arange(0, x_lim_end+0.01, 0.25))
     tickpos = [-1,1] # show only classes: -1 and 1
     plt.yticks(tickpos,tickpos)
@@ -245,6 +243,7 @@ def write_spectral_pairplot(X, y, band_names, savename, saveto, saveformat='.pdf
     click.secho(f'Spectral pairplot saved to: {savepath}')
 
 def learn_with_and_remember(X, y, model_name, savename, saveto):
+    Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     print('Serialising model...', end='')
     if model_name == 'Linear SVM':
             # click.secho('Training Linear Kernel SVM', fg='blue')
