@@ -192,8 +192,14 @@ def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time,
     sns.lineplot(x=times, y=MA_prediction, label='MA')
     if alarm_threshold:
         ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
-    ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
-    ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
+    if preictal_start_time != -1:
+        ymin, ymax = plt.ylim()
+        # ax.fill_between(times, 0, 1, where=times < preictal_start_time, color='#9cd34a', alpha=0.3, transform=ax.get_xaxis_transform(), label='Interictal')
+        # ax.fill_between(times, 0, 1, where=times > preictal_start_time, color='#ffd429', alpha=0.3, transform=ax.get_xaxis_transform(), label='Preictal')
+        ax.fill_between(times, ymin, ymax, where= times<preictal_start_time, facecolor='#9cd34a', alpha=0.3, label='Interictal')
+        ax.fill_between(times, ymin, ymax, where= times>preictal_start_time, facecolor='#ffd429', alpha=0.3, label='Preictal')
+        
+
 
     plt.xticks(np.arange(0, x_lim_end+0.01, 0.25))
     tickpos = [-1,1] # show only classes: -1 and 1
