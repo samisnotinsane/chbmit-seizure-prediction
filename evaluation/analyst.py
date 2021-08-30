@@ -182,14 +182,17 @@ def write_spectral_response_plot(times, response, preictal_start_time, savename,
     click.secho('[Done]', fg='green')
     click.secho(f'Response plot saved to: {savepath}')
 
-def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True) -> None:
+def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True, MA_only=True) -> None:
     print('Generating plot...', end='')
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
-    ax = sns.lineplot(x=times, y=prediction, label=model_name)
-    sns.lineplot(x=times, y=MA_prediction, label='MA')
+    if MA_only == False:
+        ax = sns.lineplot(x=times, y=prediction, label=model_name)
+        sns.lineplot(x=times, y=MA_prediction, label='MA')
+    if MA_only == True:
+        sns.lineplot(x=times, y=MA_prediction, label='Prediction')
     if alarm_threshold:
         ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
     if preictal_start_time != -1:
@@ -358,7 +361,8 @@ def create_X_y(class_a_response, class_b_response):
 @click.option('--debug', is_flag=True, help='Uses smaller portion of data for quick runs')
 @click.option('--alarm_threshold', is_flag=True, help='Adds a threshold line in prediction plot.')
 @click.option('--target_label', is_flag=True, help='Adds colours for interictal and preictal periods in prediction plot.')
-def think(patient, method, learner, train, data, models, saveto, saveformat, debug, alarm_threshold, target_label):
+@click.option('--prediction_only', is_flag=True, help='Shows only MA signal in prediction plot.')
+def think(patient, method, learner, train, data, models, saveto, saveformat, debug, alarm_threshold, target_label, prediction_only):
     """
     Predict seizure from EEG data in real time.
     """
@@ -419,7 +423,7 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
 
         # plots
         write_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, saveformat, x_lim_end=x_lim_end)
-        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold)
+        write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only)
 
     if method.lower() == 'spectral':
         click.secho(f'Begin real-time prediction with model \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='magenta')
@@ -441,7 +445,7 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
 
         # plots
         write_spectral_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, x_lim_end=1.50)
-        write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold)
+        write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only)
     click.secho(f'Completed online prediction with model \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='green')
 
 @cli.command()

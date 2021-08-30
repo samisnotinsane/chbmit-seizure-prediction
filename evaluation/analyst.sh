@@ -105,20 +105,20 @@ echo 'Invoking...'
 
 # chb01 prediction with ARMA (TEST set)
 # -------------------------
-python analyst.py think \
---patient='chb01' --method='ARMA' --learner='chb01_ARMA_Linear_SVM_v2' \
---data='./data' --models='./models' --saveto='./figures/chb01/AR' \
---saveformat='.pdf'
+# python analyst.py think \
+# --patient='chb01' --method='ARMA' --learner='chb01_ARMA_Linear_SVM_v2' \
+# --data='./data' --models='./models' --saveto='./figures/chb01/AR' \
+# --saveformat='.pdf'
 
-python analyst.py think \
---patient='chb01' --method='ARMA' --learner='chb01_ARMA_RBF_SVM_v2' \
---data='./data' --models='./models' --saveto='./figures/chb01/AR' \
---saveformat='.pdf'
+# python analyst.py think \
+# --patient='chb01' --method='ARMA' --learner='chb01_ARMA_RBF_SVM_v2' \
+# --data='./data' --models='./models' --saveto='./figures/chb01/AR' \
+# --saveformat='.pdf' --prediction_only
 
-python analyst.py think \
---patient='chb01' --method='ARMA' --learner='chb01_ARMA_Logistic_Regression_v2' \
---data='./data' --models='./models' --saveto='./figures/chb01/AR' \
---saveformat='.pdf'
+# python analyst.py think \
+# --patient='chb01' --method='ARMA' --learner='chb01_ARMA_Logistic_Regression_v2' \
+# --data='./data' --models='./models' --saveto='./figures/chb01/AR' \
+# --saveformat='.pdf'
 # -------------------------
 
 # chb06 prediction with ARMA (TEST set)
@@ -131,7 +131,7 @@ python analyst.py think \
 # python analyst.py think \
 # --patient='chb06' --method='ARMA' --learner='chb06_ARMA_RBF_SVM_v2' \
 # --data='./data' --models='./models' --saveto='./figures/chb06/AR' \
-# --saveformat='.pdf'
+# --saveformat='.pdf' --prediction_only
 
 # python analyst.py think \
 # --patient='chb06' --method='ARMA' --learner='chb06_ARMA_Logistic_Regression_v2' \
@@ -139,17 +139,17 @@ python analyst.py think \
 # --saveformat='.pdf'
 # -------------------------
 
-# chb10 prediction with ARMA
+# chb10 prediction with ARMA (TEST set)
 # -------------------------
 # python analyst.py think \
 # --patient='chb10' --method='ARMA' --learner='chb10_ARMA_Linear_SVM_v2' \
 # --data='./data' --models='./models' --saveto='./figures/chb10/AR' \
 # --saveformat='.pdf'
 
-# python analyst.py think \
-# --patient='chb10' --method='ARMA' --learner='chb10_ARMA_RBF_SVM_v2' \
-# --data='./data' --models='./models' --saveto='./figures/chb10/AR' \
-# --saveformat='.pdf'
+python analyst.py think \
+--patient='chb10' --method='ARMA' --learner='chb10_ARMA_RBF_SVM_v2' \
+--data='./data' --models='./models' --saveto='./figures/chb10/AR' \
+--saveformat='.pdf' --prediction_only
 
 # python analyst.py think \
 # --patient='chb10' --method='ARMA' --learner='chb10_ARMA_Logistic_Regression_v2' \
