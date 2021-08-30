@@ -259,7 +259,10 @@ def learn_with_and_remember(X, y, model_name, savename, saveto):
 def load_learner(models, patient, method, learner):
     print('Loading model...', end='')
     fileformat = '.joblib'
-    modelpath = models + '/' + patient + '/' + method[0:2] + '/' + learner + fileformat
+    if method.lower() == 'spectral':
+        modelpath = models + '/' + patient + '/' + method + '/' + learner + fileformat
+    else:
+        modelpath = models + '/' + patient + '/' + method[0:2] + '/' + learner + fileformat # assumes directory in patient folder is named 'AR'
     model = load(modelpath)
     click.secho('[Done]', fg='green')
     return model
@@ -274,10 +277,11 @@ def get_neural_rhythm_bands():
     band_names = ['Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma']
     return bands, band_names
 
-def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_window_size=20, fft_window_name='hann', model=None, wait_msg='Analysing... '):
+def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_window_size=20, fft_window_name='hann', model=None, MA_smoothing=10, wait_msg='Analysing... '):
     N = fs * online_window_size
     n = sig.shape[1]
     fp = fs/N
+
     print('Spectral configuration:')
     print(f'Input length: {n}')
     print(f'Input channels: {sig.shape[0]}')
@@ -287,10 +291,13 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
     print(f'FFT window: {fft_window_name}')
     print(f'FFT window size: {fft_window_size}')
     print(f'Spectral bands: {bands}')
+    print(f'Prediction smoothing: {MA_smoothing}')
 
     time_list = [] # prediction time history
     bandpower_list = [] # bandpower history
     predict_list = [] # prediction history
+    buf_MA = -1 * np.ones((0))   # MA prediction signal buffer
+    p_MAs = []
     Ik = N
     for _k in tqdm(range(Ik, n), desc=wait_msg):
         if(_k % N == 0):
@@ -302,14 +309,23 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
             if model != None:
                 prediction = model.predict(data.reshape(1, -1))      # Model prediction
                 predict_list.append(prediction)
+                buf_MA = np.append(buf_MA, p)                      # MA of prediction signal
+                p_MA = np.mean(buf_MA)
+                if len(buf_MA) == MA_smoothing:
+                    buf_MA = np.delete(buf_MA, 0)
+                p_MAs.append(p_MA)                                 # Add to MA prediction history
             time_list.append(_k)
             bandpower_list.append(data_mean)
-    print('time_list len:', len(time_list))
-    print('bandpower_list len:', len(bandpower_list))
     prediction_times = np.hstack(time_list)
     times = np.arange(0, prediction_times.shape[0]) / (fs/N) / 3600   # predict signal times (h)
     bandpowers = np.vstack(bandpower_list)
-    return times, bandpowers
+    if model != None:
+        prediction = np.hstack(predict_list)
+        prediction_MA = np.hstack(p_MAs)
+    else:
+        prediction = np.zeros_like(times)
+        prediction_MA = np.zeros_like(times)
+    return times, bandpowers, prediction, prediction_MA
 
 def create_X_y(class_a_response, class_b_response):
     print('Creating X, y...', end='')
@@ -341,6 +357,7 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
     """
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     learner_name = (learner.split('/')[-1]).split('.')[0]
+    human_readable_learner_name = make_learner_name_human_readable(learner_name)
     if train:
         sset = 'Train'
         x_lim_end = 1.5
@@ -378,6 +395,7 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
     click.secho(f'Hyperparameters:\n {model.get_params()}')
 
     if method == 'ARMA':
+        click.secho(f'Begin real-time prediction with \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='blue')
         # initialise ARMA parameters
         # online prediction
         fs = 256
@@ -394,8 +412,28 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
 
         # plots
         write_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, saveformat, x_lim_end=x_lim_end)
-        human_readable_learner_name = make_learner_name_human_readable(learner_name)
         write_prediction_plot(times_in_hour, prediction, MA_prediction, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold)
+
+    if method.lower() == 'spectral':
+        click.secho(f'Begin real-time prediction with \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='magenta')
+        online_window_size = 35 # WARNING: Do not change value without knowing what you're doing! Increasing value will not produce features for full time length. Decreasing will distort signal.
+        fs = 256
+        bands, band_names = get_neural_rhythm_bands()
+        times, response, prediction, prediction_MA = neural_power_core(sig=X, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
+        print('Dimensionality of times:', times.shape)
+        print('Dimensionality of response:', response.shape)
+        print('Dimensionality of prediction:', prediction.shape)
+        print('Dimensionality of prediction MA:', prediction_MA.shape)
+
+        class_a_data_hstacked = np.hstack(class_a_data)
+        times_in_hour = np.arange(0, times.shape[0]) / (fs/window) / 3600
+        preictal_start_time = np.rint(np.max( (np.arange(0, class_a_data_hstacked.shape[1]) / fs) )) / 3600
+        print('Preictal start (h):', preictal_start_time)
+
+        # plots
+        write_spectral_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, x_lim_end=0.75)
+        write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold)
+    click.secho(f'Completed online prediction with \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='green')
 
 @cli.command()
 @click.option('--patient', required=True, help='Patient identifier (e.g. \'chb01\')')
@@ -476,13 +514,13 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
         click.secho(f'Generating features for class: {class_a_name}')
         print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
-        _, class_a_response = neural_power_core(sig=class_a_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
+        _, class_a_response, _, _ = neural_power_core(sig=class_a_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
         print(f'{class_a_name} response dimensionality: {class_a_response.shape}')
 
         click.secho(f'Generating features for class: {class_b_name}')
         print(f'Input channels {class_b_name}: {class_b_data_hstacked.shape[0]}')
         print(f'Input length {class_b_name}: {class_b_data_hstacked.shape[1]}')
-        times, class_b_response = neural_power_core(sig=class_b_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
+        times, class_b_response, _, _ = neural_power_core(sig=class_b_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=20, fft_window_name='hann')
         print(f'{class_b_name} response dimensionality: {class_b_response.shape}')
         print(f'{method} times dimensionality: {times.shape}')
 

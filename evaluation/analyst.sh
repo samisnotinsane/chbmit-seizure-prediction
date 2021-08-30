@@ -178,9 +178,16 @@ echo 'Invoking...'
 
 # chb01 training with Spectral Power in Band
 # -------------------------------------------------- 
-python analyst.py teach \
---patient='chb01' --method='Spectral' --learning_algorithm='Linear SVM' --data='./data' \
---learnersaveto='./models/chb01/Spectral' --plot_figures
+# python analyst.py teach \
+# --patient='chb01' --method='Spectral' --learning_algorithm='Linear SVM' --data='./data' \
+# --learnersaveto='./models/chb01/Spectral' --plot_figures
+
+# chb01 testing with Spectral Power in Band
+# -------------------------
+python analyst.py think \
+--patient='chb01' --method='Spectral' --learner='chb01_Spectral_Linear_SVM_v2' --train \
+--data='./data' --models='./models' --saveto='./figures/chb01/Spectral' \
+--saveformat='.pdf'
 
 # -------------------------------------------------- 
 echo 'analyst.sh terminated'
