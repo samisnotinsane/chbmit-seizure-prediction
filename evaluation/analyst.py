@@ -498,6 +498,7 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
             write_spectral_response_plot(times_in_hour, class_b_response, preictal_start_time, class_b_savename, saveto, x_lim_end=0.75)
         
         X, y = create_X_y(class_a_response, class_b_response)
+        print('Please wait...')
 
         # visualise ARMA feature distribution
         if plot_figures:
@@ -505,9 +506,9 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
             write_spectral_pairplot(X, y, band_names, savename, saveto)
 
         # # train and save model
-        # model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
-        # savename = f'{patient}_{method}_{model_name}_v2'
-        # learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
+        model_name = learning_algorithm.split(' ')[0] + '_' + learning_algorithm.split(' ')[1]
+        savename = f'{patient}_{method}_{model_name}_v2'
+        learn_with_and_remember(X, y, learning_algorithm, savename, learnersaveto)
 
     click.secho(f'Completed teaching {learning_algorithm} about patient {patient} using {method}.', fg='green')
 
