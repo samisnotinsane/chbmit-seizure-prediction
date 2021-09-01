@@ -291,7 +291,7 @@ echo 'Invoking...'
 python analyst.py think \
 --patient='chb10' --method='Spectral' --learner='chb10_Spectral_RBF_SVM_v2' \
 --data='./data' --models='./models' --saveto='./figures/chb10/Spectral' \
---saveformat='.pdf' --prediction_only
+--saveformat='.pdf' --prediction_only --kf
 
 # -------------------------------------------------- 
 echo 'analyst.sh terminated'

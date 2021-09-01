@@ -184,17 +184,21 @@ def write_spectral_response_plot(times, response, preictal_start_time, savename,
     click.secho('[Done]', fg='green')
     click.secho(f'Response plot saved to: {savepath}')
 
-def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True, MA_only=True) -> None:
+def write_prediction_plot(times, prediction, MA_prediction, preictal_start_time, model_name, savename, saveto, saveformat, x_lim_end=3.75, alarm_threshold=True, MA_only=True, KF=False, KF_prediction=None, raw_preds=False) -> None:
     print('Generating plot...', end='')
     Path(saveto).mkdir(parents=True, exist_ok=True) # create saveto directory if not exists
     savepath = saveto + '/' + savename + saveformat
     sns.set_palette(sns.color_palette('Set2'))
     plt.figure(figsize=(12,6))
+    if KF == True:
+        MA_only = False
+        sns.lineplot(x=times, y=KF_prediction, label='KF')
     if MA_only == False:
-        ax = sns.lineplot(x=times, y=prediction, label=model_name)
         sns.lineplot(x=times, y=MA_prediction, label='MA')
     if MA_only == True:
         sns.lineplot(x=times, y=MA_prediction, label='Prediction')
+    if raw_preds == True:
+        ax = sns.lineplot(x=times, y=prediction, label=model_name)
     if alarm_threshold:
         ax.axhline(y=0, ls='--', color='k', label='Alarm Threshold')
     if preictal_start_time != -1:
@@ -287,10 +291,26 @@ def get_neural_rhythm_bands():
     band_names = ['Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma']
     return bands, band_names
 
-def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_window_size=2, fft_window_name='hann', model=None, MA_smoothing=10, wait_msg='Analysing... '):
+def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_window_size=2, fft_window_name='hann', model=None, MA_smoothing=10, KF=False, wait_msg='Analysing... '):
     N = fs*online_window_size
     n = sig.shape[1]
     fp = fs/N
+
+    # KF parameters
+    if KF == True:
+        rng = np.random.default_rng()
+        th_n1_n1 = rng.standard_normal((6,1)) # estimate at time n-1 is noise to begin with
+        P_n1_n1 = 0.001 * np.eye(6) # covariance of estimate at time n-1
+
+        # Noise variances -- hyperparameters (to be tuned)
+        # Set measurement noise as fraction of data variance (of first few samples)
+        R = 0.02
+
+        # Set process noise as covariance of some beta which is the size of variance 0.0001
+        beta = 0.0009
+        Q = beta * np.eye(6)
+        print(f'Kalman R:', R)
+        print(f'Kalman Q:\n', Q)
 
     print('Spectral configuration:')
     print(f'Input length: {n}')
@@ -303,10 +323,13 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_wind
     print(f'Spectral bands: {bands}')
     print(f'Prediction smoothing: {MA_smoothing}')
 
+
     time_list = [] # prediction time history
     bandpower_list = [] # bandpower history
     predict_list = [] # prediction history
     buf_MA = -1 * np.ones((0))   # MA prediction signal buffer
+    kalman_preds = [] # Kalman tracking prediction history
+    y = [-1, -1, -1, -1, -1, -1] # Kalman prediction signal buffer
     p_MAs = []
     Ik = N
     for _k in tqdm(range(Ik, n), desc=wait_msg):
@@ -324,6 +347,46 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_wind
                 if len(buf_MA) == MA_smoothing:
                     buf_MA = np.delete(buf_MA, 0)
                 p_MAs.append(p_MA)                                 # Add to MA prediction history
+
+                if KF == True:
+                    y.append(prediction.item())
+                    x = np.zeros((6,1))
+                    # Space to store and plot estimated parameters (length)
+                    th_conv = []
+                    # First two estimates are initial guesses
+                    th_conv.append(th_n1_n1[0])
+
+                    # Kalman Iteration Loop (univariate observation, start from time step 1)
+                    for n in range(6, len(y)):
+                        # Input vector contains past value
+                        x[0] = y[n-1]
+                        x[1] = y[n-2]
+
+                        # Prediction of state and covariance
+                        th_n_n1 = th_n1_n1.copy()
+                        P_n_n1 = P_n1_n1 + Q
+
+                        # Innovation: difference between prediction (yh) and error (y_n)
+                        yh = th_n_n1.T @ x
+                        en = y[n] - yh # innovation
+
+                        # Kalman gain (kn) and innovation variance (den)
+                        den = x.T @ P_n_n1 @ x + R
+                        kn = P_n1_n1 @ x / den
+
+                        # Posterior update
+                        th_n_n = th_n_n1 + kn * en
+                        P_n_n = (np.eye(6) - kn @ x.T) @ P_n_n1
+
+                        # Save
+                        th_conv.append(th_n_n)
+
+                        # Remember for next step
+                        th_n1_n1 = th_n_n.copy()
+                        P_n1_n1 = P_n_n.copy()
+                    # save tracking data
+                    kalman_preds.append(yh)    
+
             time_list.append(_k)
             bandpower_list.append(data_mean)
     prediction_times = np.hstack(time_list)
@@ -332,10 +395,13 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_wind
     if model != None:
         prediction = np.hstack(predict_list)
         prediction_MA = np.hstack(p_MAs)
+        prediction_KF = [k[0] for k in kalman_preds]
+        prediction_KF = np.hstack(prediction_KF)
     else:
         prediction = np.zeros_like(times)
         prediction_MA = np.zeros_like(times)
-    return times, bandpowers, prediction, prediction_MA
+        prediction_KF = np.zeros_like(times)
+    return times, bandpowers, prediction, prediction_MA, prediction_KF
 
 def create_X_y(class_a_response, class_b_response):
     print('Creating X, y...', end='')
@@ -364,7 +430,8 @@ def create_X_y(class_a_response, class_b_response):
 @click.option('--alarm_threshold', is_flag=True, help='Adds a threshold line in prediction plot.')
 @click.option('--target_label', is_flag=True, help='Adds colours for interictal and preictal periods in prediction plot.')
 @click.option('--prediction_only', is_flag=True, help='Shows only MA signal in prediction plot.')
-def think(patient, method, learner, train, data, models, saveto, saveformat, debug, alarm_threshold, target_label, prediction_only):
+@click.option('--kf', is_flag=True, help='Performs Kalman tracking on prediction signal in prediction plot.')
+def think(patient, method, learner, train, data, models, saveto, saveformat, debug, alarm_threshold, target_label, prediction_only, kf):
     """
     Predict seizure from EEG data in real time.
     """
@@ -432,11 +499,12 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         online_window_size = 35 # WARNING: Do not change value without knowing what you're doing! Increasing value will not produce features for full time length. Decreasing will distort signal.
         fs = 256
         bands, band_names = get_neural_rhythm_bands()
-        times, response, prediction, prediction_MA = neural_power_core(sig=X, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=2, fft_window_name='hann', model=model, MA_smoothing=10)
+        times, response, prediction, prediction_MA, prediction_KF = neural_power_core(sig=X, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=2, fft_window_name='hann', model=model, MA_smoothing=10, KF=kf)
         print('Dimensionality of times:', times.shape)
         print('Dimensionality of response:', response.shape)
         print('Dimensionality of prediction:', prediction.shape)
         print('Dimensionality of prediction MA:', prediction_MA.shape)
+        print('Dimensionality of KF:', prediction_KF.shape)
 
         class_a_data_hstacked = np.hstack(class_a_data)
         times_in_hour = np.arange(0, times.shape[0]) / (fs/(fs*online_window_size)) / 3600
@@ -447,7 +515,10 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
 
         # plots
         write_spectral_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, x_lim_end=1.50)
-        write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only)
+        if kf == True:
+            write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only, KF=kf, KF_prediction=prediction_KF)
+        if kf == False:
+            write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only, KF=False)
     click.secho(f'Completed online prediction with model \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='green')
 
 @cli.command()
