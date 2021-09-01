@@ -498,7 +498,7 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         click.secho(f'Begin real-time prediction with model \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='magenta')
         online_window_size = 35 # WARNING: Do not change value without knowing what you're doing! Increasing value will not produce features for full time length. Decreasing will distort signal.
         fs = 256
-        fft_win = 20
+        fft_win = 2*(1/0.1)
         bands, band_names = get_neural_rhythm_bands()
         times, response, prediction, prediction_MA, prediction_KF = neural_power_core(sig=X, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=fft_win, fft_window_name='hann', model=model, MA_smoothing=10, KF=kf)
         print('Dimensionality of times:', times.shape)
