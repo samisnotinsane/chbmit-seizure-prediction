@@ -598,13 +598,14 @@ def teach(patient, method, learning_algorithm, data, learnersaveto, plot_figures
         wait_msg = 'Extracting features... '
         online_window_size = 35 # WARNING: Do not change value without knowing what you're doing! Increasing value will not produce features for full time length. Decreasing will distort signal.
         fs = 256
+        fft_win = 2*(1/0.1)
         click.secho(f'Generating features for class: {class_a_name}')
         print(f'Input channels {class_a_name}: {class_a_data_hstacked.shape[0]}')
         print(f'Input length {class_a_name}: {class_a_data_hstacked.shape[1]}')
         # print('Please wait...', end='')
         # class_a_data_hstacked_padded = np.pad(class_a_data_hstacked, (class_a_data_hstacked.shape[1], class_a_data_hstacked.shape[1]), 'constant') # zero-pad both sides
         # click.secho('[Done]', fg='green')
-        times, class_a_response, _, _ = neural_power_core(sig=class_a_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=2, fft_window_name='hann')
+        times, class_a_response, _, _ = neural_power_core(sig=class_a_data_hstacked, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=fft_win, fft_window_name='hann')
         print(f'{class_a_name} response dimensionality: {class_a_response.shape}')
 
         click.secho(f'Generating features for class: {class_b_name}')
