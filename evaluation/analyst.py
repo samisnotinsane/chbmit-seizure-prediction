@@ -113,7 +113,7 @@ def ARMA(sig, fs=None, model=None, wait_msg='Analysing... '):
     print(f'Sampling frequency: {fs} Hz')
     print(f'Prediction frequency: {fp} Hz')
     print(f'AR parameter smoothing: {feature_mem}')
-    print(f'Prediction smoothing: {predict_mem}')
+    print(f'Prediction filtering: {predict_mem}')
 
     n_c = sig.shape[0] # channel count in EEG
     n = sig.shape[1] #  sample count in EEG
@@ -291,7 +291,7 @@ def get_neural_rhythm_bands():
     band_names = ['Delta', 'Theta', 'Alpha', 'Beta', 'Low Gamma', 'High Gamma']
     return bands, band_names
 
-def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_window_size=2, fft_window_name='hann', model=None, MA_smoothing=10, KF=False, wait_msg='Analysing... '):
+def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_window_size=2, fft_window_name='hann', model=None, MA_smoothing=10, KF=False, wait_msg='Analysing... '):
     N = fs*online_window_size
     n = sig.shape[1]
     fp = fs/N
@@ -321,7 +321,7 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=2, fft_wind
     print(f'FFT window: {fft_window_name}')
     print(f'FFT window size: {fft_window_size}')
     print(f'Spectral bands: {bands}')
-    print(f'Prediction smoothing: {MA_smoothing}')
+    print(f'Prediction filtering: {MA_smoothing}')
 
 
     time_list = [] # prediction time history
@@ -498,8 +498,9 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
         click.secho(f'Begin real-time prediction with model \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='magenta')
         online_window_size = 35 # WARNING: Do not change value without knowing what you're doing! Increasing value will not produce features for full time length. Decreasing will distort signal.
         fs = 256
+        fft_win = 20
         bands, band_names = get_neural_rhythm_bands()
-        times, response, prediction, prediction_MA, prediction_KF = neural_power_core(sig=X, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=2, fft_window_name='hann', model=model, MA_smoothing=10, KF=kf)
+        times, response, prediction, prediction_MA, prediction_KF = neural_power_core(sig=X, fs=fs, bands=bands, band_names=band_names, online_window_size=online_window_size, fft_window_size=fft_win, fft_window_name='hann', model=model, MA_smoothing=10, KF=kf)
         print('Dimensionality of times:', times.shape)
         print('Dimensionality of response:', response.shape)
         print('Dimensionality of prediction:', prediction.shape)
