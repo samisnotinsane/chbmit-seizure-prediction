@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0.2 (e86c8708, 2021-01-15)"
+   sodipodi:docname="metrics_heatmap.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.74827794"
+     inkscape:cx="371.29914"
+     inkscape:cy="588.92863"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="true"
+     inkscape:window-width="1252"
+     inkscape:window-height="968"
+     inkscape:window-x="1715"
+     inkscape:window-y="37"
+     inkscape:window-maximized="0">
+    <inkscape:grid
+       type="xygrid"
+       id="grid833" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.260416px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 87.841676,121.70833 H 169.8626"
+       id="path839" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.289836px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 130.1751,89.958336 V 153.45833"
+       id="path841" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 87.841676,121.70833 V 89.958335 H 130.1751"
+       id="path843" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 87.841676,121.70833 v 31.75 H 130.1751"
+       id="path847" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 130.1751,89.958335 h 39.6875 v 63.499995 h -39.6875"
+       id="path859" />
+    <path
+       style="fill:#fa8257;fill-opacity:0.6;stroke-width:0.235047"
+       d="M 88.189471,105.91283 V 90.306747 h 20.886389 20.88638 v 15.606083 15.60608 H 109.07586 88.189471 Z"
+       id="path861" />
+    <path
+       style="fill:#fa8257;fill-opacity:1;stroke-width:0.235047"
+       d="m 130.43159,137.59435 v -15.60608 h 19.59561 19.59561 v 15.60608 15.60608 H 150.0272 130.43159 Z"
+       id="path863" />
+    <path
+       style="fill:#ffccaa;fill-opacity:1;stroke-width:0.235047"
+       d="m 88.189471,137.59435 v -15.60608 h 20.886389 20.88638 v 15.60608 15.60608 H 109.07586 88.189471 Z"
+       id="path867" />
+    <path
+       style="fill:#ffccaa;fill-opacity:1;stroke-width:0.235047"
+       d="M 130.43159,105.91283 V 90.306747 h 19.59561 19.59561 v 15.606083 15.60608 H 150.0272 130.43159 Z"
+       id="path873" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="92.25901"
+       y="132.65509"
+       id="text877"><tspan
+         sodipodi:role="line"
+         id="tspan875"
+         x="92.25901"
+         y="132.65509"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583">False</tspan><tspan
+         sodipodi:role="line"
+         x="92.25901"
+         y="145.88422"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         id="tspan879">Negative</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="135.1077"
+       y="101.18133"
+       id="text883"><tspan
+         sodipodi:role="line"
+         id="tspan881"
+         x="135.1077"
+         y="101.18133"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583">False</tspan><tspan
+         sodipodi:role="line"
+         x="135.1077"
+         y="114.41045"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         id="tspan885">Positive</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="92.604179"
+       y="101.11695"
+       id="text889"><tspan
+         sodipodi:role="line"
+         id="tspan887"
+         x="92.604179"
+         y="101.11695"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583">True</tspan><tspan
+         sodipodi:role="line"
+         x="92.604179"
+         y="114.34608"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         id="tspan891">Negative</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="135.64143"
+       y="132.52635"
+       id="text895"><tspan
+         sodipodi:role="line"
+         id="tspan893"
+         x="135.64143"
+         y="132.52635"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583">True</tspan><tspan
+         sodipodi:role="line"
+         x="135.64143"
+         y="145.75548"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         id="tspan897">Positive</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#aa4400;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="111.09329"
+       y="192.82877"
+       id="text919"><tspan
+         sodipodi:role="line"
+         id="tspan917"
+         x="111.09329"
+         y="192.82877"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#aa4400;stroke-width:0.264583">Predicted</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#16502d;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="22.037245"
+       y="117.11166"
+       id="text923"><tspan
+         sodipodi:role="line"
+         id="tspan921"
+         x="22.037245"
+         y="117.11166"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#16502d;stroke-width:0.264583">Ground</tspan><tspan
+         sodipodi:role="line"
+         x="22.037245"
+         y="130.34077"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#16502d;stroke-width:0.264583"
+         id="tspan925">Truth</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#fa8257;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="95.425591"
+       y="164.05385"
+       id="text929"><tspan
+         sodipodi:role="line"
+         id="tspan927"
+         x="95.425591"
+         y="164.05385"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#fa8257;fill-opacity:1;stroke-width:0.264583">Negative</tspan><tspan
+         sodipodi:role="line"
+         x="95.425591"
+         y="177.28297"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#fa8257;fill-opacity:1;stroke-width:0.264583"
+         id="tspan931">Class</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#59a98d;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="135.28369"
+       y="163.34666"
+       id="text935"><tspan
+         sodipodi:role="line"
+         id="tspan933"
+         x="135.28369"
+         y="163.34666"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#59a98d;fill-opacity:1;stroke-width:0.264583">Positive</tspan><tspan
+         sodipodi:role="line"
+         x="135.28369"
+         y="176.57579"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#59a98d;fill-opacity:1;stroke-width:0.264583"
+         id="tspan937">Class</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#fa8257;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="53.104439"
+       y="101.96821"
+       id="text941"><tspan
+         sodipodi:role="line"
+         id="tspan939"
+         x="53.104439"
+         y="101.96821"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#fa8257;fill-opacity:1;stroke-width:0.264583">Negative</tspan><tspan
+         sodipodi:role="line"
+         x="53.104439"
+         y="115.19733"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#fa8257;fill-opacity:1;stroke-width:0.264583"
+         id="tspan943">Class</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#59a98d;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="53.092262"
+       y="133.36461"
+       id="text947"><tspan
+         sodipodi:role="line"
+         x="53.092262"
+         y="133.36461"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#59a98d;fill-opacity:1;stroke-width:0.264583"
+         id="tspan949">Positive</tspan><tspan
+         sodipodi:role="line"
+         x="53.092262"
+         y="146.59373"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.05556px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#59a98d;fill-opacity:1;stroke-width:0.264583"
+         id="tspan953">Class</tspan></text>
+  </g>
+</svg>

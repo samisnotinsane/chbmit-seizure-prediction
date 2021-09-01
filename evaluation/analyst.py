@@ -37,11 +37,13 @@ def load_data(files) -> list:
     """
     Takes a list of filenames pointing to np arrays then loads and returns those arrays.
     """
+    print('Loading data...', end='')
     data_list = []
-    for i, _ in enumerate(tqdm(files)):
+    for i, _ in enumerate(files):
         data = np.load(files[i])
         data_list.append(data)
         del data
+    click.secho('[Done]', fg='green')
     return data_list
 
 def merge_data(array_a, array_b) -> np.ndarray:
