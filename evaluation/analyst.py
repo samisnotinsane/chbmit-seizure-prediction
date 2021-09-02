@@ -113,7 +113,7 @@ def ARMA(sig, fs=None, model=None, wait_msg='Analysing... '):
     print(f'Sampling frequency: {fs} Hz')
     print(f'Prediction frequency: {fp} Hz')
     print(f'AR parameter smoothing: {feature_mem}')
-    print(f'Prediction filtering: {predict_mem}')
+    print(f'Prediction MA filtering: {predict_mem}')
 
     n_c = sig.shape[0] # channel count in EEG
     n = sig.shape[1] #  sample count in EEG
@@ -299,18 +299,16 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
     # KF parameters
     if KF == True:
         rng = np.random.default_rng()
-        th_n1_n1 = rng.standard_normal((6,1)) # estimate at time n-1 is noise to begin with
-        P_n1_n1 = 0.001 * np.eye(6) # covariance of estimate at time n-1
+        th_n1_n1 = rng.standard_normal((1,1)) # estimate at time n-1 is noise to begin with
+        P_n1_n1 = 0.001 * np.eye(1) # covariance of estimate at time n-1
 
         # Noise variances -- hyperparameters (to be tuned)
         # Set measurement noise as fraction of data variance (of first few samples)
-        R = 0.02
+        R = 0.08
 
         # Set process noise as covariance of some beta which is the size of variance 0.0001
         beta = 0.0009
-        Q = beta * np.eye(6)
-        print(f'Kalman R:', R)
-        print(f'Kalman Q:\n', Q)
+        Q = beta * np.eye(1)
 
     print('Spectral configuration:')
     print(f'Input length: {n}')
@@ -321,7 +319,10 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
     print(f'FFT window: {fft_window_name}')
     print(f'FFT window size: {fft_window_size}')
     print(f'Spectral bands: {bands}')
-    print(f'Prediction filtering: {MA_smoothing}')
+    print(f'Prediction MA filtering: {MA_smoothing}')
+    if KF == True:
+        print(f'Kalman measurement noise (R):', R)
+        print(f'Kalman process covariance (Q):', Q)
 
 
     time_list = [] # prediction time history
@@ -329,7 +330,7 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
     predict_list = [] # prediction history
     buf_MA = -1 * np.ones((0))   # MA prediction signal buffer
     kalman_preds = [] # Kalman tracking prediction history
-    y = [-1, -1, -1, -1, -1, -1] # Kalman prediction signal buffer
+    y = [-1] # Kalman prediction signal buffer
     p_MAs = []
     Ik = N
     for _k in tqdm(range(Ik, n), desc=wait_msg):
@@ -347,20 +348,19 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
                 if len(buf_MA) == MA_smoothing:
                     buf_MA = np.delete(buf_MA, 0)
                 p_MAs.append(p_MA)                                 # Add to MA prediction history
-
                 if KF == True:
-                    y.append(prediction.item())
-                    x = np.zeros((6,1))
+                    y.append(prediction) # prediction is the signal we want to track with KF
+                    x = np.zeros((1,1))
                     # Space to store and plot estimated parameters (length)
                     th_conv = []
                     # First two estimates are initial guesses
                     th_conv.append(th_n1_n1[0])
 
                     # Kalman Iteration Loop (univariate observation, start from time step 1)
-                    for n in range(6, len(y)):
+                    for n in range(1, len(y)):
                         # Input vector contains past value
                         x[0] = y[n-1]
-                        x[1] = y[n-2]
+                        # x[1] = y[n-2]
 
                         # Prediction of state and covariance
                         th_n_n1 = th_n1_n1.copy()
@@ -376,7 +376,7 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
 
                         # Posterior update
                         th_n_n = th_n_n1 + kn * en
-                        P_n_n = (np.eye(6) - kn @ x.T) @ P_n_n1
+                        P_n_n = (np.eye(1) - kn @ x.T) @ P_n_n1
 
                         # Save
                         th_conv.append(th_n_n)
@@ -395,7 +395,14 @@ def neural_power_core(sig, fs, bands, band_names, online_window_size=35, fft_win
     if model != None:
         prediction = np.hstack(predict_list)
         prediction_MA = np.hstack(p_MAs)
-        prediction_KF = [k[0] for k in kalman_preds]
+        # print('times:', len(prediction_times))
+        # print('th_conv:', len(th_conv[:-1]))
+        print('MA history:', p_MAs[-25:])
+        print('---')
+        print('KF history', kalman_preds[-25:])
+        print('---')
+        prediction_KF = [k.item() for k in kalman_preds]
+        print('---')
         prediction_KF = np.hstack(prediction_KF)
     else:
         prediction = np.zeros_like(times)
@@ -515,11 +522,12 @@ def think(patient, method, learner, train, data, models, saveto, saveformat, deb
             preictal_start_time = -1
 
         # plots
-        write_spectral_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, x_lim_end=1.50)
+        write_spectral_response_plot(times_in_hour, response, preictal_start_time, response_savename, saveto, x_lim_end=x_lim_end)
         if kf == True:
             write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only, KF=kf, KF_prediction=prediction_KF)
         if kf == False:
             write_prediction_plot(times_in_hour, prediction, prediction_MA, preictal_start_time, human_readable_learner_name, prediction_savename, saveto, saveformat, x_lim_end=x_lim_end, alarm_threshold=alarm_threshold, MA_only=prediction_only, KF=False)
+
     click.secho(f'Completed online prediction with model \'{learner}\' on patient \'{patient}\' using \'{method}\'.', fg='green')
 
 @cli.command()
